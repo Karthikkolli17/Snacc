@@ -408,7 +408,9 @@ const SUPABASE_URL  = 'https://apxhycmiqtwbrpcwgaag.supabase.co';
 const SUPABASE_ANON = 'sb_publishable_pVCvt2_w1edNhnUcvQ5DEg_d-bTf05X';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-function proxied(url) { return `https://corsproxy.io/?${encodeURIComponent(url)}`; }
+function proxied(url) {
+  return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+}
 
 async function getDominantColor(img) {
   return new Promise(resolve => {
