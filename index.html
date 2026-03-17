@@ -302,7 +302,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // ── Helpers ──
 function proxied(url) {
-  return `https://corsproxy.io/?${encodeURIComponent(url)}`;
+  return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 }
 
 async function getDominantColor(img) {
