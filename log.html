@@ -406,7 +406,11 @@ nav {
 // ── Supabase config ──
 const SUPABASE_URL  = 'https://apxhycmiqtwbrpcwgaag.supabase.co';
 const SUPABASE_ANON = 'sb_publishable_pVCvt2_w1edNhnUcvQ5DEg_d-bTf05X';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+  global: {
+    headers: { 'apikey': SUPABASE_ANON }
+  }
+});
 
 function proxied(url) {
   return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
