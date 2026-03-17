@@ -298,7 +298,13 @@ nav {
 // ── Supabase config ──
 const SUPABASE_URL  = 'https://apxhycmiqtwbrpcwgaag.supabase.co';
 const SUPABASE_ANON = 'sb_publishable_pVCvt2_w1edNhnUcvQ5DEg_d-bTf05X';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const SUPABASE_URL  = 'https://apxhycmiqtwbrpcwgaag.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_pVCvt2_w1edNhnUcvQ5DEg_d-bTf05X';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+  global: {
+    headers: { 'apikey': SUPABASE_ANON }
+  }
+});
 
 // ── Helpers ──
 function proxied(url) {
