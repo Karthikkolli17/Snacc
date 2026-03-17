@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bitcount+Prop+Single:wght@100..700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8/dist/umd/supabase.js"></script>
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -297,14 +297,8 @@ nav {
 <script>
 // ── Supabase config ──
 const SUPABASE_URL  = 'https://apxhycmiqtwbrpcwgaag.supabase.co';
-const SUPABASE_ANON = 'sb_publishable_pVCvt2_w1edNhnUcvQ5DEg_d-bTf05X';
-const SUPABASE_URL  = 'https://apxhycmiqtwbrpcwgaag.supabase.co';
-const SUPABASE_ANON = 'sb_publishable_pVCvt2_w1edNhnUcvQ5DEg_d-bTf05X';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
-  global: {
-    headers: { 'apikey': SUPABASE_ANON }
-  }
-});
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFweGh5Y21pcXR3YnJwY3dnYWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NDcyMDIsImV4cCI6MjA4OTMyMzIwMn0.xbGX_zLzrYVdUWDOhPzi8Dyz4ZZ4apdLNLZF2vJU2Vg';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // ── Helpers ──
 function proxied(url) {
