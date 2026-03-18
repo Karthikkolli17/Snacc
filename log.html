@@ -310,9 +310,9 @@ nav {
 <div id="cur-ring"></div>
 
 <nav>
-  <a href="index.html" class="logo">Snacc.</a>
+  <a href="snacc.html" class="logo">Snacc.</a>
   <ul class="nav-links">
-    <li><a href="index.html">My Snaccs</a></li>
+    <li><a href="snacc.html">My Snaccs</a></li>
     <li><a href="#" class="active">Log a Snacc</a></li>
   </ul>
 </nav>
@@ -396,7 +396,7 @@ nav {
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
       <div>
         <p>Logged.</p>
-        <a href="index.html">View my Snaccs →</a>
+        <a href="snacc.html">View my Snaccs →</a>
       </div>
     </div>
   </div>
@@ -404,19 +404,11 @@ nav {
 
 <script>
 // ── Supabase config ──
-const SUPABASE_URL  = 'https://apxhycmiqtwbrpcwgaag.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFweGh5Y21pcXR3YnJwY3dnYWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NDcyMDIsImV4cCI6MjA4OTMyMzIwMn0.xbGX_zLzrYVdUWDOhPzi8Dyz4ZZ4apdLNLZF2vJU2Vg';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
-  global: {
-    headers: {
-      'apikey': SUPABASE_ANON,
-      'Authorization': `Bearer ${SUPABASE_ANON}`
-    }
-  }
-});
+const SUPABASE_URL  = 'https://klqmrtrdguxzmbhusezn.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtscW1ydHJkZ3V4em1iaHVzZXpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MTk2ODgsImV4cCI6MjA4OTM5NTY4OH0.0YQn50aj1gHSJ8qMEOARIdO18UhQxElKwcwETzBQWdo'; // replace with your anon key
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-// Helper functions
-function proxied(url) { return url; }
+function proxied(url) { return `https://corsproxy.io/?${encodeURIComponent(url)}`; }
 
 async function getDominantColor(img) {
   return new Promise(resolve => {
@@ -491,7 +483,7 @@ function buildResultCard(product) {
 
   if (product.image) {
     const img = document.createElement('img');
-    img.alt = product.name;
+    img.alt = product.name; img.crossOrigin = 'anonymous';
     card.insertBefore(img, skel);
     img.src = proxied(product.image);
     img.onload = async () => {
