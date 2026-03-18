@@ -301,9 +301,7 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // ── Helpers ──
-function proxied(url) {
-  return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-}
+function proxied(url) { return url; }
 
 async function getDominantColor(img) {
   return new Promise(resolve => {
