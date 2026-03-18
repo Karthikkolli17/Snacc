@@ -414,7 +414,7 @@ function buildCard(snack, delay) {
   } else {
     const skel = document.createElement('div'); skel.className = 'card-skeleton';
     const img  = document.createElement('img'); img.className = 'card-img';
-    img.alt = snack.name; img.crossOrigin = 'anonymous';
+    img.alt = snack.name;
     card.append(colorLayer, img, skel, overlay, delBtn);
 
     img.src = proxied(snack.image);
