@@ -15,7 +15,6 @@
 .auth-page { display: flex; flex-direction: column; justify-content: center; min-height: calc(100vh - 73px); padding: 3rem 2.5rem; max-width: 480px; margin: 0 auto; }
 .auth-heading { font-family: 'Bitcount Prop Single', monospace; font-size: clamp(2.8rem, 8vw, 4.8rem); font-weight: 700; line-height: 1.1; letter-spacing: -.02em; margin-bottom: 2.5rem; padding-top: 0.1em; min-height: 2.5em; -webkit-font-smoothing: antialiased; }
 .auth-heading span { display: block; transition: opacity .25s ease, transform .25s cubic-bezier(.16,1,.3,1); }
-.auth-heading span.hidden { opacity: 0; transform: translateY(8px); position: absolute; pointer-events: none; }
 .auth-input-wrap { position: relative; margin-bottom: .25rem; }
 .auth-input { width: 100%; background: transparent; border: none; border-bottom: 1.5px solid var(--ink); padding: .9rem 0; font-size: 1.4rem; font-family: inherit; font-weight: 500; color: var(--ink); outline: none; cursor: none; caret-color: var(--ink); }
 .auth-input::placeholder { color: rgba(17,17,17,.2); }
@@ -26,6 +25,21 @@
 .auth-btn:hover { transform: scale(1.02); }
 .auth-btn:disabled { opacity: .35; pointer-events: none; transform: none; }
 .auth-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.auth-alt-link { display: block; font-size: .55rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); background: none; border: none; cursor: none; font-family: inherit; padding: 0; margin-top: 1rem; transition: color .2s; text-align: left; }
+.auth-alt-link:hover { color: var(--ink); }
+/* PIN pad */
+.pin-label { font-size: .58rem; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin-top: 1.5rem; margin-bottom: 1.5rem; }
+.pin-dots { display: flex; gap: 1rem; margin-bottom: 2rem; }
+.pin-dot { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid var(--ink); transition: background .12s; }
+.pin-dot.filled { background: var(--ink); }
+.pin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); max-width: 200px; }
+.pin-key { background: var(--bg); border: none; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 1.15rem; font-weight: 500; color: var(--ink); padding: .95rem; cursor: none; transition: background .12s; user-select: none; -webkit-user-select: none; }
+.pin-key:hover { background: rgba(17,17,17,.05); }
+.pin-key:active { background: rgba(17,17,17,.12); }
+.pin-key-empty { pointer-events: none; }
+/* Backup prompt */
+.backup-msg { font-size: .72rem; line-height: 1.65; color: var(--ink); margin-top: 1.5rem; margin-bottom: .25rem; }
+.backup-sub { font-size: .55rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: .25rem; }
 @media (max-width: 700px) { .auth-input { font-size: 1.1rem; } }
 </style>
 </head>
@@ -37,16 +51,48 @@
 </nav>
 <div class="auth-page">
   <h1 class="auth-heading" id="auth-heading"><span>Who are<br>you?</span></h1>
+
   <div class="auth-input-wrap">
-    <input class="auth-input" id="username-input" type="text" placeholder="username" autocomplete="username" autocorrect="off" autocapitalize="off" spellcheck="false" maxlength="20"/>
+    <input class="auth-input" id="username-input" type="text" placeholder="username"
+      autocomplete="username" autocorrect="off" autocapitalize="off" spellcheck="false" maxlength="20"/>
     <span class="auth-checking" id="auth-checking">Checking…</span>
   </div>
   <p class="auth-error" id="auth-error"></p>
-  <button class="auth-btn" id="auth-btn" disabled>
-    <svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 1 0 0 10A5 5 0 0 0 12 2z"/><path d="M2 20c0-3.5 4.5-6 10-6s10 2.5 10 6"/></svg>
-    <span id="auth-btn-label">Continue with Touch ID</span>
-  </button>
+
+  <!-- Passkey + PIN link -->
+  <div id="method-section" style="display:none">
+    <button class="auth-btn" id="passkey-btn">
+      <svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 1 0 0 10A5 5 0 0 0 12 2z"/><path d="M2 20c0-3.5 4.5-6 10-6s10 2.5 10 6"/></svg>
+      <span id="passkey-btn-label">Continue</span>
+    </button>
+    <button class="auth-alt-link" id="pin-link" style="display:none">Set a PIN instead</button>
+  </div>
+
+  <!-- PIN pad -->
+  <div id="pin-section" style="display:none">
+    <p class="pin-label" id="pin-label">Choose a 4-digit PIN</p>
+    <div class="pin-dots">
+      <span class="pin-dot" id="pd0"></span>
+      <span class="pin-dot" id="pd1"></span>
+      <span class="pin-dot" id="pd2"></span>
+      <span class="pin-dot" id="pd3"></span>
+    </div>
+    <div class="pin-grid" id="pin-grid"></div>
+    <button class="auth-alt-link" id="passkey-link" style="display:none"></button>
+  </div>
+
+  <!-- After passkey signup: offer PIN backup -->
+  <div id="backup-section" style="display:none">
+    <p class="backup-msg">You're in. Want to add a PIN as backup?</p>
+    <p class="backup-sub">Useful when you're on a new device.</p>
+    <button class="auth-btn" id="backup-yes-btn">
+      <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span>Set up PIN backup</span>
+    </button>
+    <button class="auth-alt-link" id="backup-skip-btn">Skip for now</button>
+  </div>
 </div>
+
 <script>
 if (getUser()) window.location.replace('feed.html');
 
@@ -59,85 +105,206 @@ function getAuthLabel() {
 }
 const authLabel = getAuthLabel();
 
-const input    = document.getElementById('username-input');
-const btn      = document.getElementById('auth-btn');
-const btnLabel = document.getElementById('auth-btn-label');
-const heading  = document.getElementById('auth-heading');
-const errEl    = document.getElementById('auth-error');
-const checking = document.getElementById('auth-checking');
+const input       = document.getElementById('username-input');
+const errEl       = document.getElementById('auth-error');
+const checking    = document.getElementById('auth-checking');
+const heading     = document.getElementById('auth-heading');
+const methodSec   = document.getElementById('method-section');
+const passkeyBtn  = document.getElementById('passkey-btn');
+const passkeyLbl  = document.getElementById('passkey-btn-label');
+const pinLink     = document.getElementById('pin-link');
+const pinSec      = document.getElementById('pin-section');
+const pinLabelEl  = document.getElementById('pin-label');
+const passkeyLink = document.getElementById('passkey-link');
+const backupSec   = document.getElementById('backup-section');
 
-let _mode = 'empty'; // 'empty' | 'new' | 'existing'
-let _debounce = null;
+let _mode     = 'empty';   // empty | new | existing
+let _userData = null;
+let _pinMode  = null;      // setup | confirm | login | backup | backup-confirm
+let _pinFirst = '';
+let _pinVal   = '';
+let _newUserId = null;
+let _debounce  = null;
 
-function setHeading(html) {
-  heading.innerHTML = `<span>${html}</span>`;
+function setHeading(html) { heading.innerHTML = `<span>${html}</span>`; }
+
+function showSection(name) {
+  methodSec.style.display = name === 'method' ? 'block' : 'none';
+  pinSec.style.display    = name === 'pin'    ? 'block' : 'none';
+  backupSec.style.display = name === 'backup' ? 'block' : 'none';
 }
 
-function setMode(mode, username) {
-  _mode = mode;
-  errEl.textContent = '';
-  if (mode === 'empty') {
-    setHeading('Who are<br>you?');
-    btnLabel.textContent = `Continue with ${authLabel}`;
-    btn.disabled = true;
-  } else if (mode === 'existing') {
-    setHeading(`Welcome<br>back, @${username}.`);
-    btnLabel.textContent = `Sign in with ${authLabel}`;
-    btn.disabled = false;
-  } else if (mode === 'new') {
+function updateDots() {
+  for (let i = 0; i < 4; i++)
+    document.getElementById('pd' + i).classList.toggle('filled', i < _pinVal.length);
+}
+
+function openPin(mode) {
+  _pinMode = mode; _pinVal = '';
+  updateDots(); errEl.textContent = '';
+  showSection('pin');
+
+  const labels = {
+    login:           'Enter your PIN',
+    setup:           'Choose a 4-digit PIN',
+    confirm:         'Confirm your PIN',
+    backup:          'Choose a backup PIN',
+    'backup-confirm':'Confirm your PIN',
+  };
+  pinLabelEl.textContent = labels[mode] || '';
+
+  const showBack = mode === 'login' || mode === 'setup';
+  passkeyLink.style.display = showBack && _userData?.hasPasskey !== false ? 'block' : 'none';
+  if (mode === 'login') passkeyLink.textContent = `Use ${authLabel} instead`;
+  if (mode === 'setup') passkeyLink.textContent = `Use ${authLabel} instead`;
+}
+
+function setMode(mode, userData) {
+  _mode = mode; _userData = userData;
+  errEl.textContent = ''; _pinVal = ''; _pinFirst = '';
+
+  if (mode === 'empty') { setHeading('Who are<br>you?'); showSection(null); return; }
+
+  const { username, hasPasskey, hasPin } = userData;
+
+  if (mode === 'new') {
     setHeading(`Join as<br>@${username}.`);
-    btnLabel.textContent = `Get started with ${authLabel}`;
-    btn.disabled = false;
+    passkeyLbl.textContent = `Get started with ${authLabel}`;
+    passkeyBtn.disabled = false;
+    pinLink.textContent = 'Set a PIN instead';
+    pinLink.style.display = 'block';
+    showSection('method');
+    return;
+  }
+
+  if (mode === 'existing') {
+    setHeading(`Welcome<br>back, @${username}.`);
+    if (hasPin && !hasPasskey) { openPin('login'); return; }
+    passkeyLbl.textContent = `Sign in with ${authLabel}`;
+    passkeyBtn.disabled = false;
+    pinLink.textContent = 'Use PIN instead';
+    pinLink.style.display = hasPin ? 'block' : 'none';
+    showSection('method');
   }
 }
 
+// Username input
 input.addEventListener('input', () => {
   const val = input.value.trim().toLowerCase();
   clearTimeout(_debounce);
   errEl.textContent = '';
-
-  if (!val) { setMode('empty'); return; }
+  setMode('empty', null);
+  if (!val) return;
 
   if (!/^[a-z0-9_]{1,20}$/.test(val)) {
-    btn.disabled = true;
     setHeading('Who are<br>you?');
     errEl.textContent = 'Letters, numbers, underscores only.';
     return;
   }
 
   checking.classList.add('show');
-  btn.disabled = true;
-
   _debounce = setTimeout(async () => {
-    const { data } = await sb.from('users').select('id').eq('username', val).maybeSingle();
+    const { data } = await sb.from('users')
+      .select('id, credential_id, pin_hash')
+      .eq('username', val).maybeSingle();
     checking.classList.remove('show');
-    setMode(data ? 'existing' : 'new', val);
+    if (data) {
+      setMode('existing', { username: val, id: data.id, hasPasskey: !!data.credential_id, hasPin: !!data.pin_hash });
+    } else {
+      setMode('new', { username: val, hasPasskey: true, hasPin: false });
+    }
   }, 480);
 });
 
-btn.addEventListener('click', async () => {
+// Passkey button
+passkeyBtn.addEventListener('click', async () => {
   const username = input.value.trim().toLowerCase();
   errEl.textContent = '';
-  btn.disabled = true;
-  const original = btnLabel.textContent;
-  btnLabel.textContent = _mode === 'existing' ? 'Signing in…' : 'Setting up…';
-
+  passkeyBtn.disabled = true;
+  const orig = passkeyLbl.textContent;
+  passkeyLbl.textContent = _mode === 'existing' ? 'Signing in…' : 'Setting up…';
   try {
     if (_mode === 'existing') {
       await loginPasskey();
+      window.location.replace('feed.html');
     } else {
-      if (!/^[a-z0-9_]{2,20}$/.test(username)) throw new Error('Username must be 2–20 chars: letters, numbers, underscores.');
-      await registerPasskey(username);
+      const user = await registerPasskey(username);
+      _newUserId = user.id;
+      showSection('backup');
     }
-    window.location.replace('feed.html');
   } catch(e) {
     errEl.textContent = e.message || 'Something went wrong.';
-    btn.disabled = false;
-    btnLabel.textContent = original;
+    passkeyBtn.disabled = false;
+    passkeyLbl.textContent = orig;
   }
 });
 
-document.querySelectorAll('.auth-btn, .logo').forEach(el => {
+// PIN link (from method section)
+pinLink.addEventListener('click', () => openPin(_mode === 'new' ? 'setup' : 'login'));
+
+// Passkey link (from PIN pad — go back)
+passkeyLink.addEventListener('click', () => { errEl.textContent = ''; showSection('method'); });
+
+// Backup section
+document.getElementById('backup-yes-btn').addEventListener('click', () => openPin('backup'));
+document.getElementById('backup-skip-btn').addEventListener('click', () => window.location.replace('feed.html'));
+
+// PIN input handlers
+async function onDigit(d) {
+  if (_pinVal.length >= 4) return;
+  _pinVal += d; updateDots();
+  if (_pinVal.length === 4) await onPinComplete();
+}
+function onBack() { _pinVal = _pinVal.slice(0, -1); updateDots(); }
+
+async function onPinComplete() {
+  const username = input.value.trim().toLowerCase();
+  errEl.textContent = '';
+
+  if (_pinMode === 'login') {
+    try { await loginPin(username, _pinVal); window.location.replace('feed.html'); }
+    catch(e) { errEl.textContent = e.message; _pinVal = ''; updateDots(); }
+
+  } else if (_pinMode === 'setup') {
+    _pinFirst = _pinVal; openPin('confirm');
+
+  } else if (_pinMode === 'confirm') {
+    if (_pinVal !== _pinFirst) {
+      errEl.textContent = "PINs don't match — try again.";
+      _pinFirst = ''; openPin('setup'); return;
+    }
+    try { await registerPin(username, _pinVal); window.location.replace('feed.html'); }
+    catch(e) { errEl.textContent = e.message; _pinFirst = ''; openPin('setup'); }
+
+  } else if (_pinMode === 'backup') {
+    _pinFirst = _pinVal; openPin('backup-confirm');
+
+  } else if (_pinMode === 'backup-confirm') {
+    if (_pinVal !== _pinFirst) {
+      errEl.textContent = "PINs don't match — try again.";
+      _pinFirst = ''; openPin('backup'); return;
+    }
+    try { await addPinToAccount(_newUserId, username, _pinVal); window.location.replace('feed.html'); }
+    catch(e) { errEl.textContent = e.message; _pinFirst = ''; openPin('backup'); }
+  }
+}
+
+// Build numpad
+const grid = document.getElementById('pin-grid');
+[1,2,3,4,5,6,7,8,9,'',0,'⌫'].forEach(k => {
+  const b = document.createElement('button');
+  b.className = 'pin-key' + (k === '' ? ' pin-key-empty' : '');
+  b.textContent = k === '' ? '' : String(k);
+  if (k !== '') {
+    b.addEventListener('click', () => k === '⌫' ? onBack() : onDigit(String(k)));
+    b.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+    b.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+  }
+  grid.appendChild(b);
+});
+
+// Hover states for nav elements
+document.querySelectorAll('.auth-btn, .logo, .auth-alt-link').forEach(el => {
   el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
   el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
 });
