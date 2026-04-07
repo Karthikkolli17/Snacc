@@ -199,10 +199,10 @@ if (user) {
 
   async function searchOFF(q) {
     try {
-      const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=6&fields=id,product_name,brands,image_front_url`;
+      const url=`https://world.openfoodfacts.org/api/v2/search?q=${encodeURIComponent(q)}&page_size=6&fields=code,product_name,brands,image_front_url`;
       const data=await (await fetch(url)).json();
       return (data.products||[]).filter(p=>p.product_name).map(p=>({
-        id:p.id, name:p.product_name, brand:(p.brands||'').split(',')[0].trim(), image:p.image_front_url||null, source:'Open Food Facts'
+        id:p.code, name:p.product_name, brand:(p.brands||'').split(',')[0].trim(), image:p.image_front_url||null, source:'Open Food Facts'
       }));
     } catch(e) { console.warn('OFF search failed:', e); return []; }
   }
@@ -339,7 +339,9 @@ if (user) {
       barcode: selectedProduct.source==='Open Food Facts' ? selectedProduct.id : null
     });
     btn.classList.remove('saving');
-    if (!error) {
+    if (error) {
+      alert('Failed to save: ' + error.message);
+    } else {
       btn.classList.remove('ready');
       document.getElementById('success-msg').classList.add('show');
       document.querySelectorAll('.vibe-option').forEach(b=>b.classList.remove('picked'));
