@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snacc.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bitcount+Prop+Single:wght@100..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/main.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js"></script>
+<script src="js/auth.js"></script>
+<style>
+.auth-page { display: flex; flex-direction: column; justify-content: center; min-height: calc(100vh - 73px); padding: 3rem 2.5rem; max-width: 480px; margin: 0 auto; }
+.auth-label { font-size: 0.65rem; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); margin-bottom: .7rem; }
+.auth-heading { font-family: 'Bitcount Prop Single', monospace; font-size: clamp(3rem, 8vw, 5rem); font-weight: 700; line-height: .92; letter-spacing: -.02em; margin-bottom: 2.5rem; overflow: hidden; }
+.auth-heading span { display: block; transform: translateY(105%); animation: revealUp .7s cubic-bezier(.16,1,.3,1) forwards; }
+.auth-input { width: 100%; background: transparent; border: none; border-bottom: 1.5px solid var(--ink); padding: .9rem 0; font-size: 1.4rem; font-family: inherit; font-weight: 500; color: var(--ink); outline: none; cursor: none; caret-color: var(--ink); }
+.auth-input::placeholder { color: rgba(17,17,17,.2); }
+.auth-btn { display: flex; align-items: center; justify-content: center; gap: .75rem; width: 100%; background: var(--ink); color: var(--bg); border: none; padding: 1rem 2rem; font-family: inherit; font-size: 0.7rem; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; cursor: none; margin-top: 1.5rem; transition: transform .3s cubic-bezier(.34,1.56,.64,1); }
+.auth-btn:hover { transform: scale(1.02); }
+.auth-btn:disabled { opacity: .4; pointer-events: none; }
+.auth-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.auth-error { font-size: 0.63rem; letter-spacing: .1em; color: #c0392b; margin-top: .75rem; min-height: 1em; }
+.auth-switch { margin-top: 2rem; font-size: 0.63rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.auth-switch button { background: none; border: none; border-bottom: 1px solid var(--border); padding-bottom: 1px; cursor: none; font-family: inherit; font-size: 0.63rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink); transition: border-color .2s; }
+.auth-switch button:hover { border-color: var(--ink); }
+@media (max-width: 700px) { .auth-input { font-size: 1.1rem; } }
+</style>
+</head>
+<body>
+<div id="cur-dot"></div>
+<div id="cur-ring"></div>
+<nav>
+  <a href="auth.html" class="logo">Snacc.</a>
+</nav>
+<div class="auth-page">
+
+  <!-- Register -->
+  <div id="view-register">
+    <p class="auth-label">New here</p>
+    <h1 class="auth-heading"><span>Join the<br>snacc club.</span></h1>
+    <input class="auth-input" id="username-input" type="text" placeholder="pick a username" autocomplete="username" autocorrect="off" autocapitalize="off" spellcheck="false" maxlength="20"/>
+    <p class="auth-error" id="reg-error"></p>
+    <button class="auth-btn" id="register-btn">
+      <svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 1 0 0 10A5 5 0 0 0 12 2z"/><path d="M2 20c0-3.5 4.5-6 10-6s10 2.5 10 6"/></svg>
+      Get started with Face ID
+    </button>
+    <p class="auth-switch">Already got snaccs? <button id="switch-to-login">Sign in</button></p>
+  </div>
+
+  <!-- Login -->
+  <div id="view-login" style="display:none">
+    <p class="auth-label">Welcome back</p>
+    <h1 class="auth-heading"><span>Back for<br>more snaccs.</span></h1>
+    <p class="auth-error" id="login-error"></p>
+    <button class="auth-btn" id="login-btn">
+      <svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 1 0 0 10A5 5 0 0 0 12 2z"/><path d="M2 20c0-3.5 4.5-6 10-6s10 2.5 10 6"/></svg>
+      Sign in with Face ID
+    </button>
+    <p class="auth-switch">New here? <button id="switch-to-register">Create account</button></p>
+  </div>
+
+</div>
+<script>
+if (getUser()) window.location.replace('index.html');
+
+const viewReg   = document.getElementById('view-register');
+const viewLogin = document.getElementById('view-login');
+
+document.getElementById('switch-to-login').addEventListener('click', () => {
+  viewReg.style.display = 'none'; viewLogin.style.display = 'block';
+});
+document.getElementById('switch-to-register').addEventListener('click', () => {
+  viewLogin.style.display = 'none'; viewReg.style.display = 'block';
+});
+
+document.getElementById('register-btn').addEventListener('click', async () => {
+  const username = document.getElementById('username-input').value.trim().toLowerCase();
+  const errEl = document.getElementById('reg-error');
+  errEl.textContent = '';
+  if (!username) { errEl.textContent = 'Pick a username first.'; return; }
+  if (!/^[a-z0-9_]{2,20}$/.test(username)) { errEl.textContent = 'Letters, numbers, underscores. 2–20 chars.'; return; }
+  const btn = document.getElementById('register-btn');
+  btn.disabled = true; btn.lastChild.textContent = ' Setting up…';
+  try {
+    await registerPasskey(username);
+    window.location.replace('index.html');
+  } catch(e) {
+    errEl.textContent = e.message || 'Something went wrong.';
+    btn.disabled = false; btn.lastChild.textContent = ' Get started with Face ID';
+  }
+});
+
+document.getElementById('login-btn').addEventListener('click', async () => {
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.lastChild.textContent = ' Signing in…';
+  try {
+    await loginPasskey();
+    window.location.replace('index.html');
+  } catch(e) {
+    errEl.textContent = e.message || 'Something went wrong.';
+    btn.disabled = false; btn.lastChild.textContent = ' Sign in with Face ID';
+  }
+});
+
+document.querySelectorAll('.auth-btn, .auth-switch button, .logo').forEach(el => {
+  el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+  el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+});
+</script>
+<script src="js/cursor.js"></script>
+</body>
+</html>
