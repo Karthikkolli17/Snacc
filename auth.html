@@ -66,6 +66,18 @@
 <script>
 if (getUser()) window.location.replace('index.html');
 
+function getAuthLabel() {
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad/.test(ua)) return 'Face ID';
+  if (/Macintosh/.test(ua)) return 'Touch ID';
+  if (/Windows/.test(ua)) return 'Windows Hello';
+  return 'passkey';
+}
+const authLabel = getAuthLabel();
+document.querySelectorAll('.auth-btn').forEach(btn => {
+  btn.lastChild.textContent = ' ' + btn.lastChild.textContent.trim().replace('Face ID', authLabel);
+});
+
 const viewReg   = document.getElementById('view-register');
 const viewLogin = document.getElementById('view-login');
 
@@ -89,7 +101,7 @@ document.getElementById('register-btn').addEventListener('click', async () => {
     window.location.replace('index.html');
   } catch(e) {
     errEl.textContent = e.message || 'Something went wrong.';
-    btn.disabled = false; btn.lastChild.textContent = ' Get started with Face ID';
+    btn.disabled = false; btn.lastChild.textContent = ' Get started with ' + authLabel;
   }
 });
 
@@ -103,7 +115,7 @@ document.getElementById('login-btn').addEventListener('click', async () => {
     window.location.replace('index.html');
   } catch(e) {
     errEl.textContent = e.message || 'Something went wrong.';
-    btn.disabled = false; btn.lastChild.textContent = ' Sign in with Face ID';
+    btn.disabled = false; btn.lastChild.textContent = ' Sign in with ' + authLabel;
   }
 });
 
