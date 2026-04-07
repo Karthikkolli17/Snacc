@@ -199,10 +199,10 @@ if (user) {
 
   async function searchOFF(q) {
     try {
-      const url=`https://search.openfoodfacts.org/search?q=${encodeURIComponent(q)}&page_size=6`;
+      const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=6&fields=id,product_name,brands,image_front_url`;
       const data=await (await fetch(url)).json();
-      return (data.hits||[]).filter(p=>p.product_name).map(p=>({
-        id:p.code, name:p.product_name, brand:(p.brands||'').split(',')[0].trim(), image:p.image_front_url||null, source:'Open Food Facts'
+      return (data.products||[]).filter(p=>p.product_name).map(p=>({
+        id:p.id, name:p.product_name, brand:(p.brands||'').split(',')[0].trim(), image:p.image_front_url||null, source:'Open Food Facts'
       }));
     } catch(e) { console.warn('OFF search failed:', e); return []; }
   }
