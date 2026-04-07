@@ -157,5 +157,8 @@ async function openSnackModal(snack) {
   });
 
   const barcode = data.find(r => r.barcode && /^\d+$/.test(r.barcode))?.barcode;
-  if (barcode) _fetchNutrition(barcode);
+  if (barcode) {
+    _fetchNutrition(barcode);
+    document.querySelector('.snack-info-col')?.classList.add('has-nutrition');
+  }
 }
