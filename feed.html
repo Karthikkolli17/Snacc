@@ -49,7 +49,6 @@
 </nav>
 <div class="feed-wrap">
   <h1 class="feed-heading">What everyone's eating.</h1>
-  <p class="feed-sub">Live feed — most recent first</p>
   <div id="feed"></div>
 </div>
 <script>
@@ -100,7 +99,7 @@ if (user) {
       thumb.appendChild(lbl);
     }
 
-    const username = rating.users?.username || 'unknown';
+    const username = rating.users?.username || null;
 
     const info = document.createElement('div');
     info.className = 'feed-info';
@@ -109,7 +108,7 @@ if (user) {
       <p class="feed-brand">${rating.brand||''}</p>
       <div class="feed-meta">
         <span class="vibe-badge ${v.cls}">${v.label}</span>
-        <span class="feed-user">@${username}</span>
+        ${username ? `<span class="feed-user">@${username}</span>` : ''}
         <span class="feed-time">${timeAgo(rating.logged_at)}</span>
       </div>`;
 

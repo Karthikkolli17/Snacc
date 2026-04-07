@@ -64,7 +64,7 @@
 
 </div>
 <script>
-if (getUser()) window.location.replace('index.html');
+if (getUser()) window.location.replace('feed.html');
 
 function getAuthLabel() {
   const ua = navigator.userAgent;
@@ -98,7 +98,7 @@ document.getElementById('register-btn').addEventListener('click', async () => {
   btn.disabled = true; btn.lastChild.textContent = ' Setting up…';
   try {
     await registerPasskey(username);
-    window.location.replace('index.html');
+    window.location.replace('feed.html');
   } catch(e) {
     errEl.textContent = e.message || 'Something went wrong.';
     btn.disabled = false; btn.lastChild.textContent = ' Get started with ' + authLabel;
@@ -112,7 +112,7 @@ document.getElementById('login-btn').addEventListener('click', async () => {
   btn.disabled = true; btn.lastChild.textContent = ' Signing in…';
   try {
     await loginPasskey();
-    window.location.replace('index.html');
+    window.location.replace('feed.html');
   } catch(e) {
     errEl.textContent = e.message || 'Something went wrong.';
     btn.disabled = false; btn.lastChild.textContent = ' Sign in with ' + authLabel;
