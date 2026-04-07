@@ -335,7 +335,8 @@ if (user) {
       name:selectedProduct.name, brand:selectedProduct.brand||'',
       vibe:selectedVibe, image:selectedProduct.image||null,
       source:selectedProduct.source||'', logged_at:new Date().toISOString(),
-      user_id:user.id
+      user_id:user.id,
+      barcode: selectedProduct.source==='Open Food Facts' ? selectedProduct.id : null
     });
     btn.classList.remove('saving');
     if (!error) {

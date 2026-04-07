@@ -20,6 +20,7 @@ document.body.insertAdjacentHTML('beforeend', `
       </div>
     </div>
     <div class="snack-logs" id="snack-logs"></div>
+    <div class="snack-nutrition" id="snack-nutrition"></div>
   </div>
 </div>
 `);
@@ -42,11 +43,65 @@ function _timeAgo(dateStr) {
   return Math.floor(diff/604800) + 'w ago';
 }
 
+function _renderNutrition(product) {
+  const el = document.getElementById('snack-nutrition');
+  if (!el) return;
+  const n = product.nutriments || {};
+  const serving = product.serving_size || null;
+  const hasPer = !!product.serving_quantity;
+  const s = hasPer ? '_serving' : '_100g';
+  const per = hasPer ? `per serving (${serving})` : 'per 100g';
+
+  const cal     = Math.round(n[`energy-kcal${s}`]     ?? n['energy-kcal_100g']    ?? 0);
+  const fat     = +(n[`fat${s}`]                       ?? n['fat_100g']            ?? 0).toFixed(1);
+  const satFat  = +(n[`saturated-fat${s}`]             ?? n['saturated-fat_100g']  ?? 0).toFixed(1);
+  const sodium  = Math.round((n[`sodium${s}`]          ?? n['sodium_100g']         ?? 0) * 1000);
+  const carbs   = +(n[`carbohydrates${s}`]             ?? n['carbohydrates_100g']  ?? 0).toFixed(1);
+  const fiber   = +(n[`fiber${s}`]                     ?? n['fiber_100g']          ?? 0).toFixed(1);
+  const sugars  = +(n[`sugars${s}`]                    ?? n['sugars_100g']         ?? 0).toFixed(1);
+  const protein = +(n[`proteins${s}`]                  ?? n['proteins_100g']       ?? 0).toFixed(1);
+
+  el.innerHTML = `
+    <p class="snack-logs-label" style="padding:1.25rem 2rem .4rem;">Nutrition facts <span style="font-size:.5rem;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;">${per}</span></p>
+    <div class="nutrition-wrap">
+      <div class="nutrition-label">
+        <div class="nutrition-title">Nutrition<br>Facts</div>
+        <div class="nutrition-bar thick"></div>
+        <div class="nutrition-calories-row">
+          <span class="nutrition-cal-label">Calories</span>
+          <span class="nutrition-cal-val">${cal}</span>
+        </div>
+        <div class="nutrition-bar thick"></div>
+        <div class="nutrition-row"><strong>Total Fat</strong> <span>${fat}g</span></div>
+        <div class="nutrition-row indent">Saturated Fat <span>${satFat}g</span></div>
+        <div class="nutrition-bar"></div>
+        <div class="nutrition-row"><strong>Sodium</strong> <span>${sodium}mg</span></div>
+        <div class="nutrition-bar"></div>
+        <div class="nutrition-row"><strong>Total Carbohydrate</strong> <span>${carbs}g</span></div>
+        <div class="nutrition-row indent">Dietary Fiber <span>${fiber}g</span></div>
+        <div class="nutrition-row indent">Total Sugars <span>${sugars}g</span></div>
+        <div class="nutrition-bar"></div>
+        <div class="nutrition-row"><strong>Protein</strong> <span>${protein}g</span></div>
+      </div>
+    </div>`;
+}
+
+async function _fetchNutrition(barcode) {
+  try {
+    const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+    const data = await res.json();
+    if (data.status === 1 && data.product?.nutriments) {
+      _renderNutrition(data.product);
+    }
+  } catch {}
+}
+
 async function openSnackModal(snack) {
   const imgBg  = document.getElementById('snack-img-bg');
   const img    = document.getElementById('snack-img');
   const barsEl = document.getElementById('snack-bars');
   const logsEl = document.getElementById('snack-logs');
+  const nutEl  = document.getElementById('snack-nutrition');
 
   imgBg.style.backgroundColor = _noImgColors[(snack.name||'').charCodeAt(0) % _noImgColors.length];
   if (snack.image) { img.src = snack.image; img.style.display = 'block'; }
@@ -57,13 +112,14 @@ async function openSnackModal(snack) {
   document.getElementById('snack-info-count').textContent = '';
   barsEl.innerHTML = '';
   logsEl.innerHTML = '';
+  nutEl.innerHTML  = '';
 
   _backdrop.classList.add('open');
   _modal.scrollTop = 0;
 
   const { data } = await sb
     .from('ratings')
-    .select('vibe, logged_at, users(username)')
+    .select('vibe, logged_at, barcode, users(username)')
     .eq('name', snack.name)
     .order('logged_at', { ascending: false });
 
@@ -99,4 +155,8 @@ async function openSnackModal(snack) {
       <span class="snack-log-time">${_timeAgo(r.logged_at)}</span>`;
     logsEl.appendChild(item);
   });
+
+  // Fetch nutrition if any rating has a barcode
+  const barcode = data.find(r => r.barcode && /^\d+$/.test(r.barcode))?.barcode;
+  if (barcode) _fetchNutrition(barcode);
 }

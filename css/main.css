@@ -69,6 +69,20 @@ nav { display: flex; justify-content: space-between; align-items: center; paddin
 .snack-log-time { font-size: .58rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 @media (max-width: 600px) { .snack-top { grid-template-columns: 1fr; } .snack-img-col { height: 200px; } .snack-info-col { border-left: none; border-top: 1px solid var(--border); } }
 
+/* Nutrition label */
+.snack-nutrition { padding-bottom: 2rem; }
+.nutrition-wrap { padding: 0 2rem; }
+.nutrition-label { border: 2px solid var(--ink); padding: .6rem .6rem .4rem; max-width: 260px; background: var(--bg); }
+.nutrition-title { font-size: 1.8rem; font-weight: 900; line-height: 1; letter-spacing: -.02em; margin-bottom: .3rem; }
+.nutrition-bar { width: 100%; height: 1px; background: var(--ink); margin: .2rem 0; }
+.nutrition-bar.thick { height: 6px; margin: .25rem 0; }
+.nutrition-calories-row { display: flex; justify-content: space-between; align-items: flex-end; padding: .2rem 0; }
+.nutrition-cal-label { font-size: .7rem; font-weight: 700; }
+.nutrition-cal-val { font-size: 2.2rem; font-weight: 900; line-height: 1; }
+.nutrition-row { display: flex; justify-content: space-between; align-items: baseline; font-size: .6rem; padding: .18rem 0; border-bottom: 1px solid rgba(17,17,17,.15); }
+.nutrition-row.indent { padding-left: 1rem; }
+.nutrition-row strong { font-weight: 700; }
+
 @media (max-width: 700px) {
   body { cursor: auto; }
   #cur-dot, #cur-ring { display: none; }
