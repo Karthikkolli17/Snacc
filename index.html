@@ -181,6 +181,7 @@ if (user) {
     });
     card.addEventListener('mouseenter', ()=>document.body.classList.add('hovering'));
     card.addEventListener('mouseleave', ()=>document.body.classList.remove('hovering'));
+    card.addEventListener('click', () => openSnackModal(snack));
     setTimeout(()=>card.classList.add('in'), delay);
     return card;
   }
@@ -208,6 +209,7 @@ if (user) {
   });
 }
 </script>
+<script src="js/snack-modal.js"></script>
 <script src="js/cursor.js"></script>
 </body>
 </html>
