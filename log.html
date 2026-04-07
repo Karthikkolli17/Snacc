@@ -207,12 +207,12 @@ let selectedProduct=null, selectedVibe=null;
 
 async function searchOFF(q) {
   try {
-    const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=6&fields=id,product_name,brands,image_front_url`;
+    const url=`https://world.openfoodfacts.org/api/v2/search?search_terms=${encodeURIComponent(q)}&page_size=6&fields=id,product_name,brands,image_front_url&sort_by=unique_scans_n`;
     const data=await (await fetch(url)).json();
     return (data.products||[]).filter(p=>p.product_name).map(p=>({
       id:p.id, name:p.product_name, brand:(p.brands||'').split(',')[0].trim(), image:p.image_front_url||null, source:'Open Food Facts'
     }));
-  } catch { return []; }
+  } catch(e) { console.warn('OFF search failed:', e); return []; }
 }
 
 async function searchUSDA(q) {
