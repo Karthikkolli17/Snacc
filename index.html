@@ -177,9 +177,9 @@ function buildCard(snack, delay) {
     const img  = document.createElement('img');  img.className  = 'card-img';
     img.alt = snack.name;
     card.append(colorLayer, img, skel, overlay, delBtn);
-    img.src = snack.image;
     img.onload  = () => { img.style.opacity='1'; skel.style.opacity='0'; setTimeout(()=>skel.remove(),500); };
     img.onerror = () => { skel.remove(); colorLayer.style.backgroundColor = noImgColors[(snack.name||'').charCodeAt(0)%noImgColors.length]; };
+    img.src = snack.image;
   }
 
   card.addEventListener('mousemove', e => {
