@@ -118,6 +118,8 @@ if (user) {
       </div>`;
 
     item.append(thumb, info);
+    item.style.cursor = 'none';
+    item.addEventListener('click', () => openSnackModal({ name: rating.name, brand: rating.brand, image: rating.image }));
     setTimeout(() => item.classList.add('in'), delay);
     return item;
   }
@@ -150,6 +152,7 @@ if (user) {
   });
 }
 </script>
+<script src="js/snack-modal.js"></script>
 <script src="js/cursor.js"></script>
 </body>
 </html>
