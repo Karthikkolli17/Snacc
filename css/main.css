@@ -22,8 +22,14 @@ nav { display: flex; justify-content: space-between; align-items: center; paddin
 .nav-links a { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink); text-decoration: none; cursor: none; position: relative; }
 .nav-links a::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 0; height: 1px; background: var(--ink); transition: width .35s cubic-bezier(.25,1,.5,1); }
 .nav-links a:hover::after, .nav-links a.active::after { width: 100%; }
+.nav-profile { position: relative; }
 .nav-username { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); background: none; border: none; cursor: none; font-family: inherit; transition: color .2s; padding: 0; }
 .nav-username:hover { color: var(--ink); }
+.nav-dropdown { position: absolute; top: calc(100% + .75rem); right: 0; background: var(--bg); border: 1px solid var(--border); min-width: 140px; opacity: 0; pointer-events: none; transform: translateY(-6px); transition: opacity .2s ease, transform .2s ease; z-index: 200; }
+.nav-dropdown.open { opacity: 1; pointer-events: all; transform: translateY(0); }
+.nav-dropdown a, .nav-dropdown button { display: block; width: 100%; text-align: left; padding: .75rem 1rem; font-family: inherit; font-size: 0.63rem; letter-spacing: .16em; text-transform: uppercase; color: var(--ink); text-decoration: none; background: none; border: none; cursor: none; transition: background .15s; }
+.nav-dropdown a:hover, .nav-dropdown button:hover { background: rgba(17,17,17,.05); }
+.nav-dropdown button { color: var(--muted); }
 
 @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
