@@ -47,7 +47,7 @@ async function registerPasskey(username) {
 
   const credentialId = _bufToB64(cred.rawId);
   const { error } = await sb.from('users').insert({ id: userId, username, credential_id: credentialId });
-  if (error) throw new Error('Could not save account. Try again.');
+  if (error) throw new Error(error.message);
 
   const user = { id: userId, username };
   localStorage.setItem('snacc_user', JSON.stringify(user));
