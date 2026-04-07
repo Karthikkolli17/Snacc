@@ -156,7 +156,7 @@ nav { display: flex; justify-content: space-between; align-items: center; paddin
     <p class="section-label" style="margin-bottom:1.25rem;">Step 02 — How was it?</p>
     <div class="selected-preview">
       <div class="preview-img-wrap" id="preview-img-wrap">
-        <img id="preview-img" src="" alt=""/>
+        <img id="preview-img" alt=""/>
       </div>
       <div class="preview-info">
         <p class="preview-brand" id="preview-brand"></p>
@@ -237,9 +237,9 @@ function buildResultCard(product) {
     const img=document.createElement('img');
     img.alt=product.name;
     card.insertBefore(img,skel);
-    img.src=product.image;
     img.onload=()=>{ img.style.opacity='1'; skel.style.opacity='0'; setTimeout(()=>skel.remove(),500); };
     img.onerror=()=>skel.remove();
+    img.src=product.image;
   } else {
     const colors=['#1a2a4a','#3a1a1a','#1a3a1a','#2a1a3a','#3a2a1a','#1a3a3a'];
     bg.style.backgroundColor=colors[product.name.charCodeAt(0)%colors.length];
