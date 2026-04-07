@@ -13,14 +13,16 @@ document.body.insertAdjacentHTML('beforeend', `
         <img id="snack-img" alt="" style="display:none"/>
       </div>
       <div class="snack-info-col">
-        <p class="snack-info-brand" id="snack-info-brand"></p>
-        <h2 class="snack-info-name" id="snack-info-name"></h2>
-        <p class="snack-info-count" id="snack-info-count"></p>
-        <div id="snack-bars"></div>
+        <div class="snack-info-header">
+          <p class="snack-info-brand" id="snack-info-brand"></p>
+          <h2 class="snack-info-name" id="snack-info-name"></h2>
+          <p class="snack-info-count" id="snack-info-count"></p>
+        </div>
+        <div class="snack-nutrition-inline" id="snack-nutrition"></div>
       </div>
     </div>
+    <div class="snack-vibes" id="snack-bars"></div>
     <div class="snack-logs" id="snack-logs"></div>
-    <div class="snack-nutrition" id="snack-nutrition"></div>
   </div>
 </div>
 `);
@@ -62,27 +64,25 @@ function _renderNutrition(product) {
   const protein = +(n[`proteins${s}`]                  ?? n['proteins_100g']       ?? 0).toFixed(1);
 
   el.innerHTML = `
-    <p class="snack-logs-label" style="padding:1.25rem 2rem .4rem;">Nutrition facts <span style="font-size:.5rem;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;">${per}</span></p>
-    <div class="nutrition-wrap">
-      <div class="nutrition-label">
-        <div class="nutrition-title">Nutrition<br>Facts</div>
-        <div class="nutrition-bar thick"></div>
-        <div class="nutrition-calories-row">
-          <span class="nutrition-cal-label">Calories</span>
-          <span class="nutrition-cal-val">${cal}</span>
-        </div>
-        <div class="nutrition-bar thick"></div>
-        <div class="nutrition-row"><strong>Total Fat</strong> <span>${fat}g</span></div>
-        <div class="nutrition-row indent">Saturated Fat <span>${satFat}g</span></div>
-        <div class="nutrition-bar"></div>
-        <div class="nutrition-row"><strong>Sodium</strong> <span>${sodium}mg</span></div>
-        <div class="nutrition-bar"></div>
-        <div class="nutrition-row"><strong>Total Carbohydrate</strong> <span>${carbs}g</span></div>
-        <div class="nutrition-row indent">Dietary Fiber <span>${fiber}g</span></div>
-        <div class="nutrition-row indent">Total Sugars <span>${sugars}g</span></div>
-        <div class="nutrition-bar"></div>
-        <div class="nutrition-row"><strong>Protein</strong> <span>${protein}g</span></div>
+    <p class="snack-nut-per">${per}</p>
+    <div class="nutrition-label">
+      <div class="nutrition-title">Nutrition<br>Facts</div>
+      <div class="nutrition-bar thick"></div>
+      <div class="nutrition-calories-row">
+        <span class="nutrition-cal-label">Calories</span>
+        <span class="nutrition-cal-val">${cal}</span>
       </div>
+      <div class="nutrition-bar thick"></div>
+      <div class="nutrition-row"><strong>Total Fat</strong> <span>${fat}g</span></div>
+      <div class="nutrition-row indent">Saturated Fat <span>${satFat}g</span></div>
+      <div class="nutrition-bar"></div>
+      <div class="nutrition-row"><strong>Sodium</strong> <span>${sodium}mg</span></div>
+      <div class="nutrition-bar"></div>
+      <div class="nutrition-row"><strong>Total Carbohydrate</strong> <span>${carbs}g</span></div>
+      <div class="nutrition-row indent">Dietary Fiber <span>${fiber}g</span></div>
+      <div class="nutrition-row indent">Total Sugars <span>${sugars}g</span></div>
+      <div class="nutrition-bar"></div>
+      <div class="nutrition-row"><strong>Protein</strong> <span>${protein}g</span></div>
     </div>`;
 }
 
@@ -156,7 +156,6 @@ async function openSnackModal(snack) {
     logsEl.appendChild(item);
   });
 
-  // Fetch nutrition if any rating has a barcode
   const barcode = data.find(r => r.barcode && /^\d+$/.test(r.barcode))?.barcode;
   if (barcode) _fetchNutrition(barcode);
 }
