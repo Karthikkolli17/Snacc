@@ -70,7 +70,7 @@
   <ul class="nav-links">
     <li><a href="index.html" class="active">My Snaccs</a></li>
     <li><a href="log.html">Log a Snacc</a></li>
-    <li><button class="nav-username" id="nav-username" onclick="logout()"></button></li>
+    <li><span class="nav-username" id="nav-username"></span></li>
   </ul>
 </nav>
 <div class="empty" id="empty">
@@ -183,7 +183,7 @@ if (user) {
     const grid  = document.getElementById('grid');
     const empty = document.getElementById('empty');
     grid.innerHTML = '';
-    const {data, error} = await sb.from('ratings').select('*').order('logged_at', {ascending:false});
+    const {data, error} = await sb.from('ratings').select('*').eq('user_id', user.id).order('logged_at', {ascending:false});
     if (error || !data || !data.length) { empty.classList.add('show'); return; }
     empty.classList.remove('show');
     data.forEach((s,i) => grid.appendChild(buildCard(s, i*70)));

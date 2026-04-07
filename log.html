@@ -99,7 +99,7 @@
   <ul class="nav-links">
     <li><a href="index.html">My Snaccs</a></li>
     <li><a href="#" class="active">Log a Snacc</a></li>
-    <li><button class="nav-username" id="nav-username" onclick="logout()"></button></li>
+    <li><span class="nav-username" id="nav-username"></span></li>
   </ul>
 </nav>
 <div class="page">
@@ -328,7 +328,8 @@ if (user) {
     const {error}=await sb.from('ratings').insert({
       name:selectedProduct.name, brand:selectedProduct.brand||'',
       vibe:selectedVibe, image:selectedProduct.image||null,
-      source:selectedProduct.source||'', logged_at:new Date().toISOString()
+      source:selectedProduct.source||'', logged_at:new Date().toISOString(),
+      user_id:user.id
     });
     btn.classList.remove('saving');
     if (!error) {
