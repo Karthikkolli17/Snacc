@@ -197,32 +197,38 @@ if (user) {
 
   let selectedProduct=null, selectedVibe=null;
 
-  function _fetchWithTimeout(url, ms=6000) {
+  function _fetchWithTimeout(url, ms=8000) {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), ms);
     return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(t));
   }
 
+  function _parseOFFProducts(products) {
+    return (products||[]).filter(p=>p.product_name).map(p=>({
+      id: p.code||p.id, name: p.product_name,
+      brand: (p.brands||'').split(',')[0].trim(),
+      image: p.image_front_url||null, source:'Open Food Facts'
+    }));
+  }
+
   async function searchOFF(q) {
-    const attempts = [
-      {
-        url: `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=6&fields=id,product_name,brands,image_front_url`,
-        parse: d => (d.products||[]).filter(p=>p.product_name).map(p=>({ id:p.id, name:p.product_name, brand:(p.brands||'').split(',')[0].trim(), image:p.image_front_url||null, source:'Open Food Facts' }))
-      },
-      {
-        url: `https://world.openfoodfacts.org/api/v2/search?q=${encodeURIComponent(q)}&page_size=6&fields=code,product_name,brands,image_front_url`,
-        parse: d => (d.products||[]).filter(p=>p.product_name).map(p=>({ id:p.code, name:p.product_name, brand:(p.brands||'').split(',')[0].trim(), image:p.image_front_url||null, source:'Open Food Facts' }))
-      }
-    ];
-    for (const ep of attempts) {
-      try {
-        const res = await _fetchWithTimeout(ep.url);
-        if (!res.ok) continue;
-        const results = ep.parse(await res.json());
-        if (results.length) return results;
-      } catch {}
+    const enc = encodeURIComponent(q);
+    const fields = 'code,id,product_name,brands,image_front_url';
+    const [cgi, v2] = await Promise.all([
+      _fetchWithTimeout(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${enc}&search_simple=1&action=process&json=1&page_size=9&sort_by=popularity_key&lc=en&fields=${fields}`)
+        .then(r=>r.ok?r.json():null).then(d=>d?_parseOFFProducts(d.products):[]).catch(()=>[]),
+      _fetchWithTimeout(`https://world.openfoodfacts.org/api/v2/search?q=${enc}&page_size=9&sort_by=popularity_key&fields=${fields}`)
+        .then(r=>r.ok?r.json():null).then(d=>d?_parseOFFProducts(d.products):[]).catch(()=>[])
+    ]);
+    // Merge, deduplicate — prefer whichever returned more
+    const merged = (v2.length >= cgi.length ? [...v2,...cgi] : [...cgi,...v2]);
+    const seen = new Set(), out = [];
+    for (const p of merged) {
+      const key = (p.name||'').toLowerCase().slice(0,30);
+      if (!seen.has(key)) { seen.add(key); out.push(p); }
+      if (out.length >= 6) break;
     }
-    return [];
+    return out;
   }
 
   async function searchUSDA(q) {
