@@ -68,10 +68,15 @@
 <nav>
   <a href="index.html" class="logo">Snacc.</a>
   <ul class="nav-links">
-    <li><a href="index.html" class="active">My Snaccs</a></li>
     <li><a href="feed.html">Feed</a></li>
     <li><a href="log.html">Log a Snacc</a></li>
-    <li><span class="nav-username" id="nav-username"></span></li>
+    <li class="nav-profile">
+      <button class="nav-username" id="nav-username"></button>
+      <div class="nav-dropdown" id="nav-dropdown">
+        <a href="index.html">My Snaccs</a>
+        <button onclick="logout()">Sign out</button>
+      </div>
+    </li>
   </ul>
 </nav>
 <div class="empty" id="empty">
@@ -191,6 +196,11 @@ if (user) {
   }
 
   render();
+
+  const navBtn = document.getElementById('nav-username');
+  const navDrop = document.getElementById('nav-dropdown');
+  navBtn.addEventListener('click', e => { e.stopPropagation(); navDrop.classList.toggle('open'); });
+  document.addEventListener('click', () => navDrop.classList.remove('open'));
 
   document.querySelectorAll('.nav-links a, .logo, .empty-cta, .nav-username').forEach(el => {
     el.addEventListener('mouseenter', ()=>document.body.classList.add('hovering'));
