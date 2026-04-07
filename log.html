@@ -225,7 +225,7 @@ if (user) {
 
   let selectedProduct=null, selectedVibe=null;
 
-  function _fetchWithTimeout(url, ms=8000) {
+  function _fetchWithTimeout(url, ms=12000) {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), ms);
     return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(t));
@@ -266,7 +266,8 @@ if (user) {
     try {
       const url=`https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(q)}&dataType=Branded&pageSize=6&api_key=DEMO_KEY`;
       const res = await _fetchWithTimeout(url);
-      if (!res.ok) return null; // signal: service down
+      if (res.status === 429) return []; // rate limited — not a hard failure
+      if (!res.ok) return null;
       const data = await res.json();
       return (data.foods||[]).filter(f=>f.description).map(f=>({
         id:`usda-${f.fdcId}`, name:f.description, brand:f.brandOwner||f.brandName||'', image:null, source:'USDA'
@@ -349,12 +350,16 @@ if (user) {
       if (merged.length>=6) break;
     }
     if (!merged.length) {
-      const msg = allDown
-        ? 'Search is temporarily unavailable.'
-        : 'Nothing found — try a shorter name.';
-      resultsEl.innerHTML=`<div class="no-results">${msg}<button id="no-res-manual">Add it manually →</button></div>`;
-      resultsEl.classList.add('visible');
-      document.getElementById('no-res-manual').addEventListener('click',showManual);
+      if (allDown) {
+        resultsEl.innerHTML=`<div class="no-results">Search is temporarily unavailable.<div style="display:flex;gap:.75rem;margin-top:.25rem"><button id="no-res-retry">Try again →</button><button id="no-res-manual">Add manually →</button></div></div>`;
+        resultsEl.classList.add('visible');
+        document.getElementById('no-res-retry').addEventListener('click', doSearch);
+        document.getElementById('no-res-manual').addEventListener('click',showManual);
+      } else {
+        resultsEl.innerHTML=`<div class="no-results">Nothing found — try a shorter name.<button id="no-res-manual">Add it manually →</button></div>`;
+        resultsEl.classList.add('visible');
+        document.getElementById('no-res-manual').addEventListener('click',showManual);
+      }
       return;
     }
     merged.forEach(p=>resultsEl.appendChild(buildResultCard(p)));
