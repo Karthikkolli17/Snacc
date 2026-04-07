@@ -86,6 +86,33 @@ function _renderNutrition(product) {
     </div>`;
 }
 
+function _renderStoredNutrition(n) {
+  const el = document.getElementById('snack-nutrition');
+  if (!el) return;
+  const per = n.serving ? `per serving (${n.serving})` : 'per serving';
+  el.innerHTML = `
+    <p class="snack-nut-per">${per}</p>
+    <div class="nutrition-label">
+      <div class="nutrition-title">Nutrition<br>Facts</div>
+      <div class="nutrition-bar thick"></div>
+      <div class="nutrition-calories-row">
+        <span class="nutrition-cal-label">Calories</span>
+        <span class="nutrition-cal-val">${n.calories??'—'}</span>
+      </div>
+      <div class="nutrition-bar thick"></div>
+      <div class="nutrition-row"><strong>Total Fat</strong> <span>${n.fat!=null?n.fat+'g':'—'}</span></div>
+      <div class="nutrition-row indent">Saturated Fat <span>${n.satFat!=null?n.satFat+'g':'—'}</span></div>
+      <div class="nutrition-bar"></div>
+      <div class="nutrition-row"><strong>Sodium</strong> <span>${n.sodium!=null?n.sodium+'mg':'—'}</span></div>
+      <div class="nutrition-bar"></div>
+      <div class="nutrition-row"><strong>Total Carbohydrate</strong> <span>${n.carbs!=null?n.carbs+'g':'—'}</span></div>
+      <div class="nutrition-row indent">Dietary Fiber <span>${n.fiber!=null?n.fiber+'g':'—'}</span></div>
+      <div class="nutrition-row indent">Total Sugars <span>${n.sugars!=null?n.sugars+'g':'—'}</span></div>
+      <div class="nutrition-bar"></div>
+      <div class="nutrition-row"><strong>Protein</strong> <span>${n.protein!=null?n.protein+'g':'—'}</span></div>
+    </div>`;
+}
+
 async function _fetchNutrition(barcode) {
   try {
     const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
@@ -119,7 +146,7 @@ async function openSnackModal(snack) {
 
   const { data } = await sb
     .from('ratings')
-    .select('vibe, logged_at, barcode, users(username)')
+    .select('vibe, logged_at, barcode, nutrition, users(username)')
     .eq('name', snack.name)
     .order('logged_at', { ascending: false });
 
@@ -157,8 +184,13 @@ async function openSnackModal(snack) {
   });
 
   const barcode = data.find(r => r.barcode && /^\d+$/.test(r.barcode))?.barcode;
+  const storedNutrition = data.find(r => r.nutrition)?.nutrition;
+
   if (barcode) {
     _fetchNutrition(barcode);
+    document.querySelector('.snack-info-col')?.classList.add('has-nutrition');
+  } else if (storedNutrition) {
+    _renderStoredNutrition(storedNutrition);
     document.querySelector('.snack-info-col')?.classList.add('has-nutrition');
   }
 }

@@ -74,6 +74,19 @@ nav { display: flex; justify-content: space-between; align-items: center; paddin
 .snack-log-time { font-size: .58rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 @media (max-width: 600px) { .snack-top { grid-template-columns: 1fr; } .snack-img-col { height: 220px; } .snack-info-col { border-left: none; border-top: 1px solid var(--border); max-height: none; } }
 
+/* Photo upload area */
+.photo-area { border: 1px solid var(--border); position: relative; width: 140px; height: 140px; cursor: none; overflow: hidden; margin-bottom: 1.5rem; transition: border-color .2s; }
+.photo-area:hover { border-color: var(--border-hover); }
+.photo-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .4rem; color: var(--muted); font-size: .55rem; letter-spacing: .14em; text-transform: uppercase; }
+.photo-area img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; }
+.photo-retry { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.6); color: #fff; border: none; font-family: inherit; font-size: .5rem; letter-spacing: .14em; text-transform: uppercase; padding: .4rem; cursor: none; display: none; }
+/* Nutrition scan */
+.nut-scan-row { display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem; }
+.nut-scan-btn { display: inline-flex; align-items: center; gap: .5rem; font-size: .6rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink); background: none; border: 1px solid var(--border); font-family: inherit; padding: .55rem 1rem; cursor: none; transition: border-color .2s, background .2s; }
+.nut-scan-btn:hover { border-color: var(--ink); background: rgba(17,17,17,.04); }
+.nut-status { font-size: .55rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.nut-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 2rem; margin-bottom: 1.5rem; }
+
 /* Nutrition label */
 .nutrition-label { border: 2px solid var(--ink); padding: .6rem .6rem .4rem; max-width: 240px; background: transparent; }
 .nutrition-title { font-size: 1.8rem; font-weight: 900; line-height: 1; letter-spacing: -.02em; margin-bottom: .3rem; }
