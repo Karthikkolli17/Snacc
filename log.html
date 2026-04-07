@@ -197,20 +197,40 @@ if (user) {
 
   let selectedProduct=null, selectedVibe=null;
 
+  function _fetchWithTimeout(url, ms=6000) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), ms);
+    return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(t));
+  }
+
   async function searchOFF(q) {
-    try {
-      const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=6&fields=id,product_name,brands,image_front_url`;
-      const data=await (await fetch(url)).json();
-      return (data.products||[]).filter(p=>p.product_name).map(p=>({
-        id:p.id, name:p.product_name, brand:(p.brands||'').split(',')[0].trim(), image:p.image_front_url||null, source:'Open Food Facts'
-      }));
-    } catch(e) { console.warn('OFF search failed:', e); return []; }
+    const attempts = [
+      {
+        url: `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=6&fields=id,product_name,brands,image_front_url`,
+        parse: d => (d.products||[]).filter(p=>p.product_name).map(p=>({ id:p.id, name:p.product_name, brand:(p.brands||'').split(',')[0].trim(), image:p.image_front_url||null, source:'Open Food Facts' }))
+      },
+      {
+        url: `https://world.openfoodfacts.org/api/v2/search?q=${encodeURIComponent(q)}&page_size=6&fields=code,product_name,brands,image_front_url`,
+        parse: d => (d.products||[]).filter(p=>p.product_name).map(p=>({ id:p.code, name:p.product_name, brand:(p.brands||'').split(',')[0].trim(), image:p.image_front_url||null, source:'Open Food Facts' }))
+      }
+    ];
+    for (const ep of attempts) {
+      try {
+        const res = await _fetchWithTimeout(ep.url);
+        if (!res.ok) continue;
+        const results = ep.parse(await res.json());
+        if (results.length) return results;
+      } catch {}
+    }
+    return [];
   }
 
   async function searchUSDA(q) {
     try {
       const url=`https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(q)}&dataType=Branded&pageSize=6&api_key=DEMO_KEY`;
-      const data=await (await fetch(url)).json();
+      const res = await _fetchWithTimeout(url);
+      if (!res.ok) return [];
+      const data = await res.json();
       return (data.foods||[]).filter(f=>f.description).map(f=>({
         id:`usda-${f.fdcId}`, name:f.description, brand:f.brandOwner||f.brandName||'', image:null, source:'USDA'
       }));
@@ -289,7 +309,7 @@ if (user) {
       if (merged.length>=6) break;
     }
     if (!merged.length) {
-      resultsEl.innerHTML=`<div class="no-results">Nothing found.<button id="no-res-manual">Add it manually →</button></div>`;
+      resultsEl.innerHTML=`<div class="no-results">Nothing found — try a shorter name, or add it manually.<button id="no-res-manual">Add it manually →</button></div>`;
       resultsEl.classList.add('visible');
       document.getElementById('no-res-manual').addEventListener('click',showManual);
       return;
