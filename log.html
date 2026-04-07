@@ -241,14 +241,13 @@ if (user) {
 
   async function searchOFF(q) {
     const enc = encodeURIComponent(q);
-    const fields = 'code,id,product_name,brands,image_front_url';
     const tryFetch = url => _fetchWithTimeout(url)
       .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(d => _parseOFFProducts(d.products));
 
     const [cgi, v2] = await Promise.all([
-      tryFetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${enc}&search_simple=1&action=process&json=1&page_size=9&sort_by=popularity_key&lc=en&fields=${fields}`).catch(()=>null),
-      tryFetch(`https://world.openfoodfacts.org/api/v2/search?q=${enc}&page_size=9&sort_by=popularity_key&fields=${fields}`).catch(()=>null)
+      tryFetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${enc}&search_simple=1&action=process&json=1&page_size=9&fields=id,product_name,brands,image_front_url`).catch(()=>null),
+      tryFetch(`https://world.openfoodfacts.org/api/v2/search?q=${enc}&page_size=9&sort_by=popularity_key&fields=code,product_name,brands,image_front_url`).catch(()=>null)
     ]);
 
     // null = service error, [] = no results
