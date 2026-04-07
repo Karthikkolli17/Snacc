@@ -36,9 +36,9 @@
 .card-brand { font-size: 0.5rem; letter-spacing: .22em; text-transform: uppercase; color: rgba(255,255,255,.42); margin-bottom: .18rem; }
 .card-name { font-size: .78rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #fff; line-height: 1.2; }
 .vibe-badge { display: inline-block; margin-top: .5rem; padding: .18rem .6rem; border-radius: 100px; font-size: 0.5rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 600; width: fit-content; }
-.vibe-eat   { background: rgba(100,220,130,.2); color: #7DEBA0; border: 1px solid rgba(100,220,130,.3); }
-.vibe-mid   { background: rgba(255,200,60,.18); color: #FFD060; border: 1px solid rgba(255,200,60,.25); }
-.vibe-never { background: rgba(255,70,70,.2);   color: #FF8A8A; border: 1px solid rgba(255,70,70,.28); }
+.vibe-eat   { background: #1a7a3a; color: #fff; border: none; }
+.vibe-mid   { background: #7a6a00; color: #fff; border: none; }
+.vibe-never { background: #8a1a1a; color: #fff; border: none; }
 .card-delete { position: absolute; top: .5rem; right: .5rem; width: 24px; height: 24px; border-radius: 50%; background: rgba(0,0,0,.5); border: none; display: flex; align-items: center; justify-content: center; cursor: none; z-index: 5; opacity: 0; transition: opacity .2s, transform .2s, background .2s; }
 .card:hover .card-delete { opacity: 1; }
 .card-delete:hover { transform: scale(1.15); background: rgba(200,50,50,.85); }
@@ -66,7 +66,7 @@
 <div id="cur-dot"></div>
 <div id="cur-ring"></div>
 <nav>
-  <a href="index.html" class="logo">Snacc.</a>
+  <a href="feed.html" class="logo">Snacc.</a>
   <ul class="nav-links">
     <li><a href="feed.html">Feed</a></li>
     <li><a href="log.html">Log a Snacc</a></li>
@@ -181,7 +181,6 @@ if (user) {
     });
     card.addEventListener('mouseenter', ()=>document.body.classList.add('hovering'));
     card.addEventListener('mouseleave', ()=>document.body.classList.remove('hovering'));
-    card.addEventListener('click', () => openSnackModal(snack));
     setTimeout(()=>card.classList.add('in'), delay);
     return card;
   }
@@ -209,7 +208,6 @@ if (user) {
   });
 }
 </script>
-<script src="js/snack-modal.js"></script>
 <script src="js/cursor.js"></script>
 </body>
 </html>
