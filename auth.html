@@ -212,12 +212,12 @@ input.addEventListener('input', () => {
 
   checking.classList.add('show');
   _debounce = setTimeout(async () => {
-    const { data } = await sb.from('users')
-      .select('id, credential_id, pin_hash')
+    const { data } = await sb.from('user_profiles')
+      .select('id, credential_id, has_pin')
       .eq('username', val).maybeSingle();
     checking.classList.remove('show');
     if (data) {
-      setMode('existing', { username: val, id: data.id, hasPasskey: !!data.credential_id, hasPin: !!data.pin_hash });
+      setMode('existing', { username: val, id: data.id, hasPasskey: !!data.credential_id, hasPin: data.has_pin });
     } else {
       setMode('new', { username: val, hasPasskey: true, hasPin: false });
     }
