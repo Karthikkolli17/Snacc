@@ -92,8 +92,9 @@ async function registerPin(username, pin) {
 
 async function addPinToAccount(userId, username, pin) {
   const hash = await _hashPin(username, pin);
-  const { error } = await sb.from('users').update({ pin_hash: hash }).eq('id', userId);
+  const { data, error } = await sb.from('users').update({ pin_hash: hash }).eq('id', userId).select('id');
   if (error) throw new Error(error.message);
+  if (!data || data.length === 0) throw new Error('Could not save PIN — try again.');
 }
 
 async function loginPin(username, pin) {
