@@ -258,18 +258,6 @@ if (user) {
     return out;
   }
 
-  async function searchUSDA(q) {
-    try {
-      const url=`https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(q)}&dataType=Branded&pageSize=6&api_key=DEMO_KEY`;
-      const res = await _fetchWithTimeout(url);
-      if (res.status === 429) return []; // rate limited — not a hard failure
-      if (!res.ok) return null;
-      const data = await res.json();
-      return (data.foods||[]).filter(f=>f.description).map(f=>({
-        id:`usda-${f.fdcId}`, name:f.description, brand:f.brandOwner||f.brandName||'', image:null, source:'USDA'
-      }));
-    } catch { return null; }
-  }
 
   function buildResultCard(product) {
     const card=document.createElement('div');
@@ -334,11 +322,11 @@ if (user) {
     resultsEl.innerHTML=''; resultsEl.classList.remove('visible');
     document.getElementById('searching-label').classList.add('show');
     setStep(1);
-    const [off,usda]=await Promise.all([searchOFF(q),searchUSDA(q)]);
+    const off=await searchOFF(q);
     document.getElementById('searching-label').classList.remove('show');
 
-    const allDown = off===null && usda===null;
-    const combined = [...(off||[]),...(usda||[])];
+    const allDown = off===null;
+    const combined = [...(off||[])];
     const seen=new Set(), merged=[];
     for (const p of combined) {
       const key=p.name.toLowerCase().slice(0,30);

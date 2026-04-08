@@ -15,6 +15,6 @@ export default async function handler(req, res) {
   const v2data = v2.status === 'fulfilled' ? v2.value : null;
   const cgidata = cgi.status === 'fulfilled' ? cgi.value : null;
 
-  res.setHeader('Cache-Control', 's-maxage=300');
+  res.setHeader('Cache-Control', 'no-store');
   res.json({ v2: v2data, cgi: cgidata });
 }
