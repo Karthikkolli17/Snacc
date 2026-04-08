@@ -72,39 +72,32 @@ async function loginPasskey() {
   return user;
 }
 
-async function _hashPin(username, pin) {
-  const raw = new TextEncoder().encode(username.toLowerCase() + ':' + pin);
-  const hash = await crypto.subtle.digest('SHA-256', raw);
-  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+const PIN_AUTH_URL = `${SUPABASE_URL}/functions/v1/pin-auth`;
+
+async function _pinRequest(body) {
+  const res = await fetch(PIN_AUTH_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON}` },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+  return data;
 }
 
 async function registerPin(username, pin) {
-  const { data: existing } = await sb.from('users').select('id').eq('username', username).maybeSingle();
-  if (existing) throw new Error('Username already taken — try another.');
-  const hash = await _hashPin(username, pin);
-  const userId = crypto.randomUUID();
-  const { error } = await sb.from('users').insert({ id: userId, username, pin_hash: hash });
-  if (error) throw new Error(error.message);
-  const user = { id: userId, username };
+  const data = await _pinRequest({ action: 'register', username, pin });
+  const user = { id: data.id, username: data.username };
   localStorage.setItem('snacc_user', JSON.stringify(user));
   return user;
 }
 
 async function addPinToAccount(userId, username, pin) {
-  const hash = await _hashPin(username, pin);
-  const { data, error } = await sb.from('users').update({ pin_hash: hash }).eq('id', userId).select('id');
-  if (error) throw new Error(error.message);
-  if (!data || data.length === 0) throw new Error('Could not save PIN — try again.');
+  await _pinRequest({ action: 'add-pin', username, pin, userId });
 }
 
 async function loginPin(username, pin) {
-  const hash = await _hashPin(username, pin);
-  const { data, error } = await sb.from('users')
-    .select('id, username')
-    .eq('username', username)
-    .eq('pin_hash', hash)
-    .maybeSingle();
-  if (error || !data) throw new Error('Wrong PIN — try again.');
+  const data = await _pinRequest({ action: 'login', username, pin });
   const user = { id: data.id, username: data.username };
   localStorage.setItem('snacc_user', JSON.stringify(user));
   return user;
