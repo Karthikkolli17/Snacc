@@ -241,7 +241,7 @@ if (user) {
 
   async function searchOFF(q) {
     const enc = encodeURIComponent(q);
-    const data = await _fetchWithTimeout(`/api/search?q=${enc}`)
+    const data = await _fetchWithTimeout(`/api/search?v=2&q=${enc}`)
       .then(r => r.ok ? r.json() : null).catch(() => null);
     const cgi = data ? _parseOFFProducts(data.cgi?.products) : null;
     const v2  = data ? _parseOFFProducts(data.v2?.products)  : null;
