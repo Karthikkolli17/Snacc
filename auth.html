@@ -270,12 +270,13 @@ document.getElementById('backup-yes-btn').addEventListener('click', () => openPi
 document.getElementById('backup-skip-btn').addEventListener('click', () => window.location.replace('feed.html'));
 
 // PIN input handlers
+let _pinBusy = false;
 async function onDigit(d) {
-  if (_pinVal.length >= 4) return;
+  if (_pinVal.length >= 4 || _pinBusy) return;
   _pinVal += d; updateDots();
-  if (_pinVal.length === 4) await onPinComplete();
+  if (_pinVal.length === 4) { _pinBusy = true; await onPinComplete(); _pinBusy = false; }
 }
-function onBack() { _pinVal = _pinVal.slice(0, -1); updateDots(); }
+function onBack() { if (_pinBusy) return; _pinVal = _pinVal.slice(0, -1); updateDots(); }
 
 async function onPinComplete() {
   const username = input.value.trim().toLowerCase();
@@ -290,8 +291,9 @@ async function onPinComplete() {
 
   } else if (_pinMode === 'confirm') {
     if (_pinVal !== _pinFirst) {
+      _pinFirst = ''; openPin('setup');
       errEl.textContent = "PINs don't match — try again.";
-      _pinFirst = ''; openPin('setup'); return;
+      return;
     }
     try {
       if (_mode === 'new') {
@@ -301,17 +303,18 @@ async function onPinComplete() {
         localStorage.setItem('snacc_user', JSON.stringify({ id: _userData.id, username }));
       }
       window.location.replace('feed.html');
-    } catch(e) { errEl.textContent = e.message; _pinFirst = ''; openPin('setup'); }
+    } catch(e) { errEl.textContent = e.message || 'Something went wrong.'; _pinVal = ''; updateDots(); }
 
   } else if (_pinMode === 'backup') {
     _pinFirst = _pinVal; openPin('backup-confirm');
 
   } else if (_pinMode === 'backup-confirm') {
     if (_pinVal !== _pinFirst) {
+      _pinFirst = ''; openPin('backup');
       errEl.textContent = "PINs don't match — try again.";
-      _pinFirst = ''; openPin('backup'); return;
+      return;
     }
-    try { await addPinToAccount(_newUserId, username, _pinVal); } catch(e) { /* already authenticated, proceed */ }
+    try { await addPinToAccount(_newUserId, username, _pinVal); } catch(e) { errEl.textContent = e.message || 'Could not save PIN.'; _pinVal = ''; updateDots(); return; }
     window.location.replace('feed.html');
   }
 }
