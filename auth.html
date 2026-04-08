@@ -14,7 +14,8 @@
 <style>
 .auth-page { display: flex; flex-direction: column; justify-content: center; min-height: calc(100vh - 73px); padding: 3rem 2.5rem; max-width: 480px; margin: 0 auto; }
 .auth-heading { font-family: 'Bitcount Prop Single', monospace; font-size: clamp(2.8rem, 8vw, 4.8rem); font-weight: 700; line-height: 1.1; letter-spacing: -.02em; margin-bottom: 2.5rem; padding-top: 0.1em; -webkit-font-smoothing: antialiased; }
-.auth-status { font-size: .58rem; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin-top: .5rem; transition: opacity .2s; }
+.auth-status { font-size: .58rem; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin-top: .5rem; opacity: 0; transform: translateY(5px); transition: opacity .35s ease, transform .35s cubic-bezier(.16,1,.3,1); }
+.auth-status.show { opacity: 1; transform: translateY(0); }
 .auth-input-wrap { position: relative; margin-bottom: .25rem; }
 .auth-input { width: 100%; background: transparent; border: none; border-bottom: 1.5px solid var(--ink); padding: .9rem 0; font-size: 1.4rem; font-family: inherit; font-weight: 500; color: var(--ink); outline: none; cursor: none; caret-color: var(--ink); }
 .auth-input::placeholder { color: rgba(17,17,17,.2); }
@@ -164,12 +165,12 @@ function setMode(mode, userData) {
   _mode = mode; _userData = userData;
   errEl.textContent = ''; _pinVal = ''; _pinFirst = '';
 
-  if (mode === 'empty') { statusEl.textContent = ''; showSection(null); return; }
+  if (mode === 'empty') { statusEl.textContent = ''; statusEl.classList.remove('show'); showSection(null); return; }
 
   const { username, hasPasskey, hasPin } = userData;
 
   if (mode === 'new') {
-    statusEl.textContent = `New here — joining as @${username}`;
+    statusEl.textContent = `New here — joining as @${username}`; statusEl.classList.add('show');
     passkeyLbl.textContent = `Get started with ${authLabel}`;
     passkeyBtn.disabled = false;
     pinLink.textContent = 'Set a PIN instead';
@@ -179,7 +180,7 @@ function setMode(mode, userData) {
   }
 
   if (mode === 'existing') {
-    statusEl.textContent = `Welcome back, @${username}`;
+    statusEl.textContent = `Welcome back, @${username}`; statusEl.classList.add('show');
     if (hasPin && !hasPasskey) { openPin('login'); return; }
     passkeyLbl.textContent = `Sign in with ${authLabel}`;
     passkeyBtn.disabled = false;
@@ -194,6 +195,7 @@ input.addEventListener('input', () => {
   const val = input.value.trim().toLowerCase();
   clearTimeout(_debounce);
   errEl.textContent = '';
+  statusEl.textContent = ''; statusEl.classList.remove('show');
   setMode('empty', null);
   if (!val) return;
 
@@ -233,9 +235,17 @@ passkeyBtn.addEventListener('click', async () => {
       showSection('backup');
     }
   } catch(e) {
-    errEl.textContent = e.message || 'Something went wrong.';
-    passkeyBtn.disabled = false;
-    passkeyLbl.textContent = orig;
+    if (e.name === 'NotAllowedError' && _userData?.hasPin) {
+      openPin('login');
+    } else if (e.name === 'NotAllowedError') {
+      errEl.textContent = 'Passkey not available on this device.';
+      passkeyBtn.disabled = false;
+      passkeyLbl.textContent = orig;
+    } else {
+      errEl.textContent = e.message || 'Something went wrong.';
+      passkeyBtn.disabled = false;
+      passkeyLbl.textContent = orig;
+    }
   }
 });
 
