@@ -14,8 +14,11 @@
 <style>
 .auth-page { display: flex; flex-direction: column; justify-content: center; min-height: calc(100vh - 73px); padding: 3rem 2.5rem; max-width: 480px; margin: 0 auto; }
 .auth-heading { font-family: 'Bitcount Prop Single', monospace; font-size: clamp(2.8rem, 8vw, 4.8rem); font-weight: 700; line-height: 1.1; letter-spacing: -.02em; margin-bottom: 2.5rem; padding-top: 0.1em; -webkit-font-smoothing: antialiased; }
-.auth-status { font-size: .58rem; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin-top: .5rem; opacity: 0; transform: translateY(5px); transition: opacity .35s ease, transform .35s cubic-bezier(.16,1,.3,1); }
-.auth-status.show { opacity: 1; transform: translateY(0); }
+.auth-status { font-size: .58rem; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin-top: .5rem; opacity: 0; transition: opacity .4s ease; }
+.auth-status.show { opacity: 1; }
+.auth-btn-secondary { display: flex; align-items: center; justify-content: center; gap: .75rem; width: 100%; background: transparent; color: var(--ink); border: 1.5px solid var(--ink); padding: 1rem 2rem; font-family: inherit; font-size: 0.7rem; font-weight: 600; letter-spacing: .1em; cursor: none; margin-top: .75rem; transition: transform .3s cubic-bezier(.34,1.56,.64,1), background .2s; }
+.auth-btn-secondary:hover { transform: scale(1.02); background: rgba(17,17,17,.05); }
+.auth-btn-secondary svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 .auth-input-wrap { position: relative; margin-bottom: .25rem; }
 .auth-input { width: 100%; background: transparent; border: none; border-bottom: 1.5px solid var(--ink); padding: .9rem 0; font-size: 1.4rem; font-family: inherit; font-weight: 500; color: var(--ink); outline: none; cursor: none; caret-color: var(--ink); }
 .auth-input::placeholder { color: rgba(17,17,17,.2); }
@@ -63,13 +66,16 @@
   <p class="auth-status" id="auth-status"></p>
   <p class="auth-error" id="auth-error"></p>
 
-  <!-- Passkey + PIN link -->
+  <!-- Passkey + PIN -->
   <div id="method-section" style="display:none">
     <button class="auth-btn" id="passkey-btn">
       <svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 1 0 0 10A5 5 0 0 0 12 2z"/><path d="M2 20c0-3.5 4.5-6 10-6s10 2.5 10 6"/></svg>
       <span id="passkey-btn-label">Continue</span>
     </button>
-    <button class="auth-alt-link" id="pin-link" style="display:none">Set a PIN instead</button>
+    <button class="auth-btn-secondary" id="pin-link" style="display:none">
+      <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span id="pin-link-label">Use a PIN</span>
+    </button>
   </div>
 
   <!-- PIN pad -->
@@ -173,8 +179,8 @@ function setMode(mode, userData) {
     statusEl.textContent = `New here — joining as @${username}`; statusEl.classList.add('show');
     passkeyLbl.textContent = `Get started with ${authLabel}`;
     passkeyBtn.disabled = false;
-    pinLink.textContent = 'Set a PIN instead';
-    pinLink.style.display = 'block';
+    document.getElementById('pin-link-label').textContent = 'Set a PIN instead';
+    pinLink.style.display = 'flex';
     showSection('method');
     return;
   }
@@ -184,8 +190,8 @@ function setMode(mode, userData) {
     if (hasPin && !hasPasskey) { openPin('login'); return; }
     passkeyLbl.textContent = `Sign in with ${authLabel}`;
     passkeyBtn.disabled = false;
-    pinLink.textContent = 'Use PIN instead';
-    pinLink.style.display = hasPin ? 'block' : 'none';
+    document.getElementById('pin-link-label').textContent = hasPin ? 'Use PIN instead' : 'Set up a PIN';
+    pinLink.style.display = 'flex';
     showSection('method');
   }
 }
@@ -314,7 +320,7 @@ const grid = document.getElementById('pin-grid');
 });
 
 // Hover states for nav elements
-document.querySelectorAll('.auth-btn, .logo, .auth-alt-link').forEach(el => {
+document.querySelectorAll('.auth-btn, .auth-btn-secondary, .logo, .auth-alt-link').forEach(el => {
   el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
   el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
 });
