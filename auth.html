@@ -14,7 +14,7 @@
 <style>
 .auth-page { display: flex; flex-direction: column; justify-content: center; min-height: calc(100vh - 73px); padding: 3rem 2.5rem; max-width: 480px; margin: 0 auto; }
 .auth-heading { font-family: 'Bitcount Prop Single', monospace; font-size: clamp(2.8rem, 8vw, 4.8rem); font-weight: 700; line-height: 1.1; letter-spacing: -.02em; margin-bottom: 2.5rem; padding-top: 0.1em; -webkit-font-smoothing: antialiased; }
-.auth-status { font-size: .58rem; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin-top: .5rem; min-height: 1.2em; transition: opacity .2s; }
+.auth-status { font-size: .58rem; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin-top: .5rem; transition: opacity .2s; }
 .auth-input-wrap { position: relative; margin-bottom: .25rem; }
 .auth-input { width: 100%; background: transparent; border: none; border-bottom: 1.5px solid var(--ink); padding: .9rem 0; font-size: 1.4rem; font-family: inherit; font-weight: 500; color: var(--ink); outline: none; cursor: none; caret-color: var(--ink); }
 .auth-input::placeholder { color: rgba(17,17,17,.2); }
@@ -32,8 +32,10 @@
 .pin-dots { display: flex; gap: 1rem; margin-bottom: 2rem; }
 .pin-dot { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid var(--ink); transition: background .12s; }
 .pin-dot.filled { background: var(--ink); }
-.pin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); max-width: 200px; }
-.pin-key { background: var(--bg); border: none; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 1.15rem; font-weight: 500; color: var(--ink); padding: .95rem; cursor: none; transition: background .12s; user-select: none; -webkit-user-select: none; }
+.pin-grid { display: grid; grid-template-columns: repeat(3, 1fr); max-width: 210px; border: 1px solid var(--border); }
+.pin-key { background: var(--bg); border: none; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 1.15rem; font-weight: 500; color: var(--ink); padding: .95rem; cursor: none; transition: background .12s; user-select: none; -webkit-user-select: none; }
+.pin-key:nth-child(3n) { border-right: none; }
+.pin-key:nth-child(n+10) { border-bottom: none; }
 .pin-key:hover { background: rgba(17,17,17,.05); }
 .pin-key:active { background: rgba(17,17,17,.12); }
 .pin-key-empty { pointer-events: none; }
@@ -282,8 +284,8 @@ async function onPinComplete() {
       errEl.textContent = "PINs don't match — try again.";
       _pinFirst = ''; openPin('backup'); return;
     }
-    try { await addPinToAccount(_newUserId, username, _pinVal); window.location.replace('feed.html'); }
-    catch(e) { errEl.textContent = e.message; _pinFirst = ''; openPin('backup'); }
+    try { await addPinToAccount(_newUserId, username, _pinVal); } catch(e) { /* already authenticated, proceed */ }
+    window.location.replace('feed.html');
   }
 }
 
