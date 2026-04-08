@@ -11,8 +11,8 @@
 
 body { background: var(--bg); color: var(--ink); font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; cursor: none; overflow-x: hidden; min-height: 100vh; }
 
-#cur-dot { width: 7px; height: 7px; background: var(--ink); border-radius: 50%; position: fixed; top: 0; left: 0; pointer-events: none; z-index: 9999; transform: translate(-50%,-50%); transition: width .2s, height .2s; }
-#cur-ring { width: 38px; height: 38px; border: 1.5px solid var(--ink); border-radius: 50%; position: fixed; top: 0; left: 0; pointer-events: none; z-index: 9998; transform: translate(-50%,-50%); transition: width .3s, height .3s, opacity .3s; }
+#cur-dot { width: 7px; height: 7px; background: var(--ink); border-radius: 50%; position: fixed; top: -100px; left: -100px; pointer-events: none; z-index: 9999; transform: translate(-50%,-50%); transition: width .2s, height .2s; }
+#cur-ring { width: 38px; height: 38px; border: 1.5px solid var(--ink); border-radius: 50%; position: fixed; top: -100px; left: -100px; pointer-events: none; z-index: 9998; transform: translate(-50%,-50%); transition: width .3s, height .3s, opacity .3s; }
 body.hovering #cur-dot { width: 12px; height: 12px; }
 body.hovering #cur-ring { width: 54px; height: 54px; opacity: .35; }
 
@@ -99,7 +99,7 @@ nav { display: flex; justify-content: space-between; align-items: center; paddin
 .nutrition-row.indent { padding-left: 1rem; }
 .nutrition-row strong { font-weight: 700; }
 
-@media (max-width: 700px) {
+@media (max-width: 700px), (hover: none) {
   body { cursor: auto; }
   #cur-dot, #cur-ring { display: none; }
   nav { padding: 1.25rem; }

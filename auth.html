@@ -256,7 +256,11 @@ passkeyBtn.addEventListener('click', async () => {
 });
 
 // PIN link (from method section)
-pinLink.addEventListener('click', () => openPin(_mode === 'new' ? 'setup' : 'login'));
+pinLink.addEventListener('click', () => {
+  if (_mode === 'new') openPin('setup');
+  else if (_userData?.hasPin) openPin('login');
+  else openPin('setup'); // existing passkey user adding PIN for first time
+});
 
 // Passkey link (from PIN pad — go back)
 passkeyLink.addEventListener('click', () => { errEl.textContent = ''; showSection('method'); });
@@ -289,8 +293,15 @@ async function onPinComplete() {
       errEl.textContent = "PINs don't match — try again.";
       _pinFirst = ''; openPin('setup'); return;
     }
-    try { await registerPin(username, _pinVal); window.location.replace('feed.html'); }
-    catch(e) { errEl.textContent = e.message; _pinFirst = ''; openPin('setup'); }
+    try {
+      if (_mode === 'new') {
+        await registerPin(username, _pinVal);
+      } else {
+        await addPinToAccount(_userData.id, username, _pinVal);
+        localStorage.setItem('snacc_user', JSON.stringify({ id: _userData.id, username }));
+      }
+      window.location.replace('feed.html');
+    } catch(e) { errEl.textContent = e.message; _pinFirst = ''; openPin('setup'); }
 
   } else if (_pinMode === 'backup') {
     _pinFirst = _pinVal; openPin('backup-confirm');
