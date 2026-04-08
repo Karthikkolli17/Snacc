@@ -1,7 +1,6 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
-const RATE_LIMIT = 5;      // max failed attempts
+const RATE_LIMIT = 5;
 const LOCKOUT_MINUTES = 15;
 
 const corsHeaders = {
@@ -14,6 +13,25 @@ function json(data: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+async function hashPin(pin: string): Promise<string> {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(pin), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations: 100000 }, key, 256);
+  const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, "0")).join("");
+  const hashHex = Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, "0")).join("");
+  return `pbkdf2:${saltHex}:${hashHex}`;
+}
+
+async function verifyPin(pin: string, stored: string): Promise<boolean> {
+  const parts = stored.split(":");
+  if (parts.length !== 3 || parts[0] !== "pbkdf2") return false;
+  const salt = new Uint8Array(parts[1].match(/.{2}/g)!.map(b => parseInt(b, 16)));
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(pin), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations: 100000 }, key, 256);
+  const newHash = Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, "0")).join("");
+  return newHash === parts[2];
 }
 
 Deno.serve(async (req) => {
@@ -36,30 +54,25 @@ Deno.serve(async (req) => {
 
   const lowerUser = username.toLowerCase();
 
-  // --- register: new PIN-only user ---
   if (action === "register") {
     const { data: existing } = await sb.from("users").select("id").eq("username", lowerUser).maybeSingle();
     if (existing) return json({ error: "Username already taken — try another." }, 409);
-
-    const hash = await bcrypt.hash(pin);
+    const hash = await hashPin(pin);
     const newId = crypto.randomUUID();
     const { error } = await sb.from("users").insert({ id: newId, username: lowerUser, pin_hash: hash });
     if (error) return json({ error: error.message }, 500);
-
     return json({ id: newId, username: lowerUser });
   }
 
-  // --- add-pin: existing user adding PIN to passkey account ---
   if (action === "add-pin") {
     if (!userId) return json({ error: "Missing userId" }, 400);
-    const hash = await bcrypt.hash(pin);
+    const hash = await hashPin(pin);
     const { data, error } = await sb.from("users").update({ pin_hash: hash }).eq("id", userId).select("id");
     if (error) return json({ error: error.message }, 500);
     if (!data || data.length === 0) return json({ error: "Could not save PIN — try again." }, 500);
     return json({ ok: true });
   }
 
-  // --- login: verify PIN with rate limiting ---
   if (action === "login") {
     const { data: user, error } = await sb
       .from("users")
@@ -69,12 +82,11 @@ Deno.serve(async (req) => {
 
     if (error || !user || !user.pin_hash) return json({ error: "Wrong PIN — try again." }, 401);
 
-    // check lockout
     if (user.pin_locked_until && new Date(user.pin_locked_until) > new Date()) {
       return json({ error: `Too many attempts — try again in ${LOCKOUT_MINUTES} minutes.` }, 429);
     }
 
-    const valid = await bcrypt.compare(pin, user.pin_hash);
+    const valid = await verifyPin(pin, user.pin_hash);
 
     if (!valid) {
       const attempts = (user.pin_attempts || 0) + 1;
@@ -87,7 +99,6 @@ Deno.serve(async (req) => {
       return json({ error: "Wrong PIN — try again." }, 401);
     }
 
-    // success — clear attempts
     await sb.from("users").update({ pin_attempts: 0, pin_locked_until: null }).eq("id", user.id);
     return json({ id: user.id, username: user.username });
   }
