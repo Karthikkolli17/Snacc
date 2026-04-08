@@ -241,14 +241,10 @@ if (user) {
 
   async function searchOFF(q) {
     const enc = encodeURIComponent(q);
-    const tryFetch = url => _fetchWithTimeout(url)
-      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(d => _parseOFFProducts(d.products));
-
-    const [cgi, v2] = await Promise.all([
-      tryFetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${enc}&search_simple=1&action=process&json=1&page_size=9&fields=id,product_name,brands,image_front_url`).catch(()=>null),
-      tryFetch(`https://world.openfoodfacts.org/api/v2/search?q=${enc}&page_size=9&sort_by=popularity_key&fields=code,product_name,brands,image_front_url`).catch(()=>null)
-    ]);
+    const data = await _fetchWithTimeout(`/api/search?q=${enc}`)
+      .then(r => r.ok ? r.json() : null).catch(() => null);
+    const cgi = data ? _parseOFFProducts(data.cgi?.products) : null;
+    const v2  = data ? _parseOFFProducts(data.v2?.products)  : null;
 
     // null = service error, [] = no results
     if (cgi === null && v2 === null) return null; // signal: service down
