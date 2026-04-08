@@ -310,9 +310,11 @@ if (user) {
     setTimeout(()=>document.getElementById('rating-section').scrollIntoView({behavior:'smooth',block:'start'}),120);
   }
 
+  let _searchToken = 0;
   async function doSearch() {
     const q=document.getElementById('search-input').value.trim();
     if (!q) return;
+    const token = ++_searchToken;
     selectedProduct=null; selectedVibe=null;
     document.getElementById('rating-section').classList.remove('visible');
     document.getElementById('save-btn').classList.remove('ready');
@@ -323,6 +325,7 @@ if (user) {
     document.getElementById('searching-label').classList.add('show');
     setStep(1);
     const off=await searchOFF(q);
+    if (token !== _searchToken) return; // stale — a newer search is in flight
     document.getElementById('searching-label').classList.remove('show');
 
     const allDown = off===null;
