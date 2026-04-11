@@ -11,6 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/country.js"></script>
 <style>
 .catalog-wrap { padding: 2.5rem 3.5rem 6rem; max-width: 1100px; margin: 0 auto; }
 .catalog-header { margin-bottom: 2.5rem; }
@@ -37,6 +38,11 @@
 .snack-card-meta { display: flex; align-items: center; justify-content: space-between; }
 .snack-card-brand { font-size: .52rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
 .snack-card-count { font-size: .52rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.snack-card-country { font-size: .48rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.country-filter { display: flex; align-items: center; gap: .75rem; margin-top: .75rem; flex-wrap: wrap; }
+.country-filter-btn { font-size: .55rem; letter-spacing: .14em; text-transform: uppercase; padding: .45rem .8rem; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: none; font-family: inherit; transition: background .2s, color .2s, border-color .2s; }
+.country-filter-btn.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.country-filter-btn:hover { border-color: var(--ink); color: var(--ink); }
 .catalog-empty { padding: 6rem 0; font-size: .7rem; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
 @media (max-width: 900px) { .catalog-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 700px) {
@@ -66,6 +72,7 @@
 <div class="catalog-wrap">
   <div class="catalog-header">
     <h1 class="catalog-heading">Drink Aisle.</h1>
+    <div class="country-filter" id="country-filter"></div>
   </div>
   <div class="catalog-grid" id="catalog"></div>
 </div>
@@ -126,7 +133,7 @@ if (user) {
     info.innerHTML = `
       <p class="snack-card-name">${snack.name}</p>
       <div class="snack-card-meta">
-        <span class="snack-card-brand">${snack.brand||''}</span>
+        <span class="snack-card-brand">${snack.brand||''}${snack.country ? ' / '+countryFlag(snack.country) : ''}</span>
         <span class="snack-card-count">${snack.total} ${snack.total === 1 ? 'log' : 'logs'}</span>
       </div>`;
 
@@ -138,31 +145,83 @@ if (user) {
     return card;
   }
 
-  async function render() {
-    const catalogEl = document.getElementById('catalog');
-    const { data, error } = await sb
-      .from('ratings')
-      .select('name, brand, image, vibe, kind')
-      .eq('kind', KIND);
+  let _allData = [];
+  let _activeCountryFilter = new URLSearchParams(window.location.search).get('country') || null;
 
-    if (error || !data || !data.length) {
-      catalogEl.outerHTML = '<p class="catalog-empty">No drinks logged yet. Be the first.</p>';
-      return;
-    }
-
-    // Aggregate by drink name
+  function aggregate(rows) {
     const map = {};
-    data.forEach(r => {
+    rows.forEach(r => {
       if (!map[r.name]) {
-        map[r.name] = { name: r.name, brand: r.brand, image: null, counts: { eat: 0, mid: 0, never: 0 }, total: 0 };
+        map[r.name] = { name: r.name, brand: r.brand, image: null, country: null, _countryCounts: {}, counts: { eat: 0, mid: 0, never: 0 }, total: 0 };
       }
       if (!map[r.name].image && r.image) map[r.name].image = r.image;
+      if (r.country) map[r.name]._countryCounts[r.country] = (map[r.name]._countryCounts[r.country]||0) + 1;
       if (r.vibe in map[r.name].counts) map[r.name].counts[r.vibe]++;
       map[r.name].total++;
     });
+    Object.values(map).forEach(s => {
+      const cc = s._countryCounts;
+      const top = Object.keys(cc).sort((a,b) => cc[b]-cc[a])[0];
+      s.country = top || null;
+    });
+    return Object.values(map).sort((a, b) => b.total - a.total);
+  }
 
-    const drinks = Object.values(map).sort((a, b) => b.total - a.total);
-    drinks.forEach((s, i) => catalogEl.appendChild(buildCard(s, i * 40)));
+  function renderCards(snacks) {
+    const catalogEl = document.getElementById('catalog');
+    catalogEl.innerHTML = '';
+    if (!snacks.length) {
+      catalogEl.outerHTML = '<p class="catalog-empty">No drinks logged yet. Be the first.</p>';
+      return;
+    }
+    snacks.forEach((s, i) => catalogEl.appendChild(buildCard(s, i * 40)));
+  }
+
+  function buildFilter(rows) {
+    const countries = {};
+    rows.forEach(r => { if (r.country) countries[r.country] = (countries[r.country]||0) + 1; });
+    const sorted = Object.keys(countries).sort((a,b) => countries[b]-countries[a]);
+    const filterEl = document.getElementById('country-filter');
+    if (!sorted.length) return;
+    const allBtn = document.createElement('button');
+    allBtn.className = 'country-filter-btn' + (!_activeCountryFilter ? ' active' : '');
+    allBtn.textContent = 'All';
+    allBtn.addEventListener('click', () => { _activeCountryFilter = null; applyFilter(); });
+    filterEl.appendChild(allBtn);
+    sorted.forEach(code => {
+      const btn = document.createElement('button');
+      btn.className = 'country-filter-btn' + (_activeCountryFilter === code ? ' active' : '');
+      btn.textContent = `${countryFlag(code)} ${countryName(code)}`;
+      btn.addEventListener('click', () => { _activeCountryFilter = code; applyFilter(); });
+      btn.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+      btn.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+      filterEl.appendChild(btn);
+    });
+  }
+
+  function applyFilter() {
+    const filtered = _activeCountryFilter ? _allData.filter(r => r.country === _activeCountryFilter) : _allData;
+    renderCards(aggregate(filtered));
+    document.querySelectorAll('.country-filter-btn').forEach(btn => {
+      btn.classList.toggle('active', (_activeCountryFilter ? `${countryFlag(_activeCountryFilter)} ${countryName(_activeCountryFilter)}` : 'All') === btn.textContent);
+    });
+  }
+
+  async function render() {
+    const { data, error } = await sb
+      .from('ratings')
+      .select('name, brand, image, vibe, kind, country')
+      .eq('kind', KIND);
+
+    if (error || !data || !data.length) {
+      document.getElementById('catalog').outerHTML = '<p class="catalog-empty">No drinks logged yet. Be the first.</p>';
+      return;
+    }
+
+    _allData = data;
+    buildFilter(data);
+    const filtered = _activeCountryFilter ? data.filter(r => r.country === _activeCountryFilter) : data;
+    renderCards(aggregate(filtered));
   }
 
   render();

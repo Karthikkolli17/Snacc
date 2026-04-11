@@ -151,7 +151,7 @@ async function openSnackModal(snack) {
 
   let query = sb
     .from('ratings')
-    .select('vibe, logged_at, barcode, nutrition, kind, users(username)')
+    .select('vibe, logged_at, barcode, nutrition, kind, country, users(username)')
     .eq('name', snack.name)
     .order('logged_at', { ascending: false });
 
@@ -164,9 +164,17 @@ async function openSnackModal(snack) {
   }
 
   const counts = { eat: 0, mid: 0, never: 0 };
-  data.forEach(r => { if (r.vibe in counts) counts[r.vibe]++; });
+  const countryCounts = {};
+  data.forEach(r => {
+    if (r.vibe in counts) counts[r.vibe]++;
+    if (r.country) countryCounts[r.country] = (countryCounts[r.country]||0) + 1;
+  });
   const total = data.length;
-  document.getElementById('snack-info-count').textContent = total + (total === 1 ? ' person logged this' : ' people logged this');
+  const topCountry = Object.keys(countryCounts).sort((a,b) => countryCounts[b]-countryCounts[a])[0] || null;
+  const countText = total + (total === 1 ? ' person logged this' : ' people logged this');
+  document.getElementById('snack-info-count').textContent = topCountry
+    ? countText + ' / ' + countryFlag(topCountry) + ' ' + countryName(topCountry)
+    : countText;
 
   ['eat','mid','never'].forEach(vibe => {
     const count = counts[vibe];
@@ -186,7 +194,7 @@ async function openSnackModal(snack) {
     const item = document.createElement('div');
     item.className = 'snack-log-item';
     item.innerHTML = `
-      <span class="snack-log-user">${r.users?.username ? '@' + r.users.username : '—'}</span>
+      <span class="snack-log-user">${r.users?.username ? '@' + r.users.username : '—'}${r.country ? ' / '+countryFlag(r.country) : ''}</span>
       <span class="snack-log-time">${_timeAgo(r.logged_at)}</span>`;
     logsEl.appendChild(item);
   });

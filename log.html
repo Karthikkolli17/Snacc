@@ -11,6 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/country.js"></script>
 <style>
 .page { max-width: 860px; margin: 0 auto; padding: 4rem 2.5rem 6rem; }
 .steps { display: flex; align-items: center; gap: .6rem; margin-bottom: 3rem; }
@@ -86,6 +87,20 @@
 .success-msg p { font-size: 0.72rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; }
 .success-msg a { font-size: 0.68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); text-decoration: none; cursor: none; border-bottom: 1px solid var(--border); padding-bottom: 1px; transition: color .2s, border-color .2s; }
 .success-msg a:hover { color: var(--ink); border-color: var(--ink); }
+.country-pick { margin-bottom: 2.5rem; }
+.country-pick .section-label { margin-bottom: .6rem; }
+.country-current { display: flex; align-items: center; gap: .6rem; margin-bottom: .5rem; }
+.country-current .country-code { font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.country-current .country-name { font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.country-change-btn { font-size: .58rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); background: none; border: none; cursor: none; font-family: inherit; border-bottom: 1px solid var(--border); padding-bottom: 1px; margin-left: auto; transition: color .2s, border-color .2s; }
+.country-change-btn:hover { color: var(--ink); border-color: var(--ink); }
+.country-dropdown { display: none; border: 1px solid var(--border); max-height: 220px; overflow-y: auto; }
+.country-dropdown.open { display: block; }
+.country-search { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border); padding: .7rem .8rem; font-size: .78rem; font-family: inherit; color: var(--ink); outline: none; caret-color: var(--ink); cursor: none; }
+.country-search::placeholder { color: rgba(17,17,17,0.22); }
+.country-list { list-style: none; padding: 0; margin: 0; }
+.country-list li { padding: .55rem .8rem; font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; cursor: none; transition: background .15s; }
+.country-list li:hover { background: var(--ink); color: var(--bg); }
 @media (max-width: 700px) {
   .page { padding: 2.5rem 1.25rem 5rem; }
   .results { grid-template-columns: repeat(2, 1fr); }
@@ -194,6 +209,18 @@
         <p class="preview-name" id="preview-name"></p>
       </div>
     </div>
+    <div class="country-pick" id="country-pick">
+      <p class="section-label">Where did you have it?</p>
+      <div class="country-current" id="country-current">
+        <span class="country-code" id="country-code-label"></span>
+        <span class="country-name" id="country-name-label"></span>
+        <button class="country-change-btn" id="country-change-btn">Change</button>
+      </div>
+      <div class="country-dropdown" id="country-dropdown">
+        <input class="country-search" id="country-search" type="text" placeholder="Search countries..." autocomplete="off"/>
+        <ul class="country-list" id="country-list"></ul>
+      </div>
+    </div>
     <div class="vibe-options" id="vibe-options">
       <button class="vibe-option" data-vibe="eat">
         <span class="label" id="eat-label">Would Eat Again</span>
@@ -259,6 +286,40 @@ if (user) {
   }
 
   let selectedProduct=null, selectedVibe=null;
+  let selectedCountry = detectCountry() || 'US';
+
+  // Country picker
+  function renderCountryLabel() {
+    document.getElementById('country-code-label').textContent = countryFlag(selectedCountry);
+    document.getElementById('country-name-label').textContent = countryName(selectedCountry);
+  }
+  function buildCountryList(filter) {
+    const ul = document.getElementById('country-list');
+    ul.innerHTML = '';
+    const q = (filter||'').toLowerCase();
+    const items = COUNTRIES.filter(c => !q || c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q));
+    items.forEach(c => {
+      const li = document.createElement('li');
+      li.textContent = `${countryFlag(c.code)}  ${c.name}`;
+      li.addEventListener('click', () => {
+        selectedCountry = c.code;
+        renderCountryLabel();
+        document.getElementById('country-dropdown').classList.remove('open');
+      });
+      li.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+      li.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+      ul.appendChild(li);
+    });
+  }
+  renderCountryLabel();
+  document.getElementById('country-change-btn').addEventListener('click', () => {
+    const dd = document.getElementById('country-dropdown');
+    const open = dd.classList.toggle('open');
+    if (open) { document.getElementById('country-search').value=''; buildCountryList(''); document.getElementById('country-search').focus(); }
+  });
+  document.getElementById('country-search').addEventListener('input', e => buildCountryList(e.target.value));
+  document.getElementById('country-change-btn').addEventListener('mouseenter',()=>document.body.classList.add('hovering'));
+  document.getElementById('country-change-btn').addEventListener('mouseleave',()=>document.body.classList.remove('hovering'));
 
   function applyKind(kind, reset = false) {
     KIND = kind === 'drink' ? 'drink' : 'snack';
@@ -576,7 +637,8 @@ if (user) {
       user_id:user.id,
       barcode: selectedProduct.source==='Open Food Facts' ? selectedProduct.id : null,
       nutrition: selectedProduct.nutrition||null,
-      kind: KIND
+      kind: KIND,
+      country: selectedCountry || null
     });
     btn.classList.remove('saving');
     if (error) {
