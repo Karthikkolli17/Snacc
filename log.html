@@ -301,31 +301,12 @@ if (user) {
     return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(t));
   }
 
-  function _parseOFFProducts(products) {
-    return (products||[]).filter(p=>p.product_name).map(p=>({
-      id: p.code||p.id, name: p.product_name,
-      brand: (p.brands||'').split(',')[0].trim(),
-      image: p.image_front_url||null, source:'Open Food Facts'
-    }));
-  }
-
   async function searchOFF(q) {
     const enc = encodeURIComponent(q);
     const data = await _fetchWithTimeout(`/api/search?q=${enc}&_=${Date.now()}`)
       .then(r => r.ok ? r.json() : null).catch(() => null);
-    const cgi = data ? _parseOFFProducts(data.cgi?.products) : null;
-    const v2  = data ? _parseOFFProducts(data.v2?.products)  : null;
-
-    // null = service error, [] = no results
-    if (cgi === null && v2 === null) return null; // signal: service down
-    const merged = [...(v2||[]), ...(cgi||[])];
-    const seen = new Set(), out = [];
-    for (const p of merged) {
-      const key = (p.name||'').toLowerCase().slice(0,30);
-      if (!seen.has(key)) { seen.add(key); out.push(p); }
-      if (out.length >= 6) break;
-    }
-    return out;
+    if (!data) return null;
+    return data.results || [];
   }
 
 
