@@ -1,3 +1,9 @@
+async function fetchWithTimeout(url, ms = 4000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(t));
+}
+
 export default async function handler(req, res) {
   const { q } = req.query;
   if (!q) return res.status(400).json({ error: 'Missing query' });
@@ -5,8 +11,8 @@ export default async function handler(req, res) {
   const apiKey = process.env.USDA_API_KEY;
   const enc = encodeURIComponent(q);
 
-  // 1. Search USDA for reliable US branded food results
-  const usdaData = await fetch(
+  // 1. Search USDA
+  const usdaData = await fetchWithTimeout(
     `https://api.nal.usda.gov/fdc/v1/foods/search?query=${enc}&dataType=Branded&pageSize=8&api_key=${apiKey}`
   ).then(r => r.ok ? r.json() : null).catch(() => null);
 
@@ -16,15 +22,19 @@ export default async function handler(req, res) {
     return res.json({ results: [] });
   }
 
-  // 2. For each result that has a UPC, fetch the image from OFF by barcode (much more reliable than name search)
+  // 2. Look up images from OFF by UPC (v0 API, faster than v2)
   const imageMap = {};
   await Promise.allSettled(
     foods
       .filter(f => f.gtinUpc)
+      .slice(0, 6)
       .map(f =>
-        fetch(`https://world.openfoodfacts.org/api/v2/product/${f.gtinUpc}?fields=image_front_url`)
+        fetchWithTimeout(`https://world.openfoodfacts.org/api/v0/product/${f.gtinUpc}.json?fields=image_front_url`, 3000)
           .then(r => r.ok ? r.json() : null)
-          .then(d => { if (d?.product?.image_front_url) imageMap[f.gtinUpc] = d.product.image_front_url; })
+          .then(d => {
+            const img = d?.product?.image_front_url;
+            if (img) imageMap[f.gtinUpc] = img;
+          })
           .catch(() => null)
       )
   );
