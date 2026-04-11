@@ -29,7 +29,7 @@ export default async function handler(req, res) {
       .filter(f => f.gtinUpc)
       .slice(0, 6)
       .map(f =>
-        fetchWithTimeout(`https://world.openfoodfacts.org/api/v0/product/${f.gtinUpc}.json?fields=image_front_url`, 3000)
+        fetchWithTimeout(`https://world.openfoodfacts.org/api/v0/product/${f.gtinUpc.replace(/^0+/, '')}.json?fields=image_front_url`, 3000)
           .then(r => r.ok ? r.json() : null)
           .then(d => {
             const img = d?.product?.image_front_url;
