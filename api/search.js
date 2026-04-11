@@ -5,41 +5,36 @@ export default async function handler(req, res) {
   const apiKey = process.env.USDA_API_KEY;
   const enc = encodeURIComponent(q);
 
-  // USDA FoodData Central — US branded foods, reliable coverage
-  const usdaUrl = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${enc}&dataType=Branded&pageSize=8&api_key=${apiKey}`;
+  // 1. Search USDA for reliable US branded food results
+  const usdaData = await fetch(
+    `https://api.nal.usda.gov/fdc/v1/foods/search?query=${enc}&dataType=Branded&pageSize=8&api_key=${apiKey}`
+  ).then(r => r.ok ? r.json() : null).catch(() => null);
 
-  // Open Food Facts US — for images only, best-effort
-  const offUrl = `https://us.openfoodfacts.org/api/v2/search?q=${enc}&page_size=8&sort_by=popularity_key&fields=code,product_name,brands,image_front_url`;
-
-  const [usdaRes, offRes] = await Promise.allSettled([
-    fetch(usdaUrl).then(r => r.ok ? r.json() : null).catch(() => null),
-    fetch(offUrl).then(r => r.ok ? r.json() : null).catch(() => null),
-  ]);
-
-  const usdaData = usdaRes.status === 'fulfilled' ? usdaRes.value : null;
-  const offData  = offRes.status  === 'fulfilled' ? offRes.value  : null;
-
-  // Build image map from OFF: lowercase name → image url
-  const imageMap = {};
-  if (offData?.products) {
-    for (const p of offData.products) {
-      if (p.product_name && p.image_front_url) {
-        imageMap[p.product_name.toLowerCase().slice(0, 40)] = p.image_front_url;
-      }
-    }
+  const foods = usdaData?.foods || [];
+  if (!foods.length) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    return res.json({ results: [] });
   }
 
-  // Build results from USDA, attach images where names match
-  const results = (usdaData?.foods || []).map(f => {
-    const name = f.description || '';
-    const key = name.toLowerCase().slice(0, 40);
-    return {
-      id: `usda-${f.fdcId}`,
-      name,
-      brand: f.brandOwner || f.brandName || '',
-      image: imageMap[key] || null,
-    };
-  });
+  // 2. For each result that has a UPC, fetch the image from OFF by barcode (much more reliable than name search)
+  const imageMap = {};
+  await Promise.allSettled(
+    foods
+      .filter(f => f.gtinUpc)
+      .map(f =>
+        fetch(`https://world.openfoodfacts.org/api/v2/product/${f.gtinUpc}?fields=image_front_url`)
+          .then(r => r.ok ? r.json() : null)
+          .then(d => { if (d?.product?.image_front_url) imageMap[f.gtinUpc] = d.product.image_front_url; })
+          .catch(() => null)
+      )
+  );
+
+  const results = foods.map(f => ({
+    id: `usda-${f.fdcId}`,
+    name: f.description || '',
+    brand: f.brandOwner || f.brandName || '',
+    image: (f.gtinUpc && imageMap[f.gtinUpc]) || null,
+  }));
 
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.json({ results });
