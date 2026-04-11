@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Snacc. — Log a Snacc</title>
+<title>Snacc. — Log an Item</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bitcount+Prop+Single:wght@100..700&display=swap" rel="stylesheet">
@@ -31,6 +31,10 @@
 .searching-label.show { opacity: 1; }
 .manual-trigger { font-size: 0.62rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); background: none; border: none; cursor: none; font-family: inherit; border-bottom: 1px solid var(--border); padding-bottom: 1px; transition: color .2s, border-color .2s; }
 .manual-trigger:hover { color: var(--ink); border-color: var(--ink); }
+.kind-toggle { display: inline-flex; border: 1px solid var(--border); margin: -1.2rem 0 2.4rem; }
+.kind-btn { background: transparent; border: none; border-right: 1px solid var(--border); color: var(--ink); cursor: none; font-family: inherit; font-size: .62rem; font-weight: 600; letter-spacing: .18em; min-width: 110px; padding: .85rem 1.2rem; text-transform: uppercase; transition: background .2s, color .2s; }
+.kind-btn:last-child { border-right: none; }
+.kind-btn.active, .kind-btn:hover { background: var(--ink); color: var(--bg); }
 .results { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5px; margin-bottom: 3rem; opacity: 0; transform: translateY(20px); transition: opacity .45s ease, transform .45s cubic-bezier(.16,1,.3,1); }
 .results.visible { opacity: 1; transform: translateY(0); }
 .result-card { position: relative; aspect-ratio: 3/4; overflow: hidden; cursor: none; background: #c8c5bd; transform-style: preserve-3d; }
@@ -87,6 +91,8 @@
   .results { grid-template-columns: repeat(2, 1fr); }
   .vibe-options { grid-template-columns: 1fr; }
   .search-input { font-size: 1.2rem; }
+  .kind-toggle { display: flex; width: 100%; }
+  .kind-btn { flex: 1; min-width: 0; }
   .manual-form .form-row { grid-template-columns: 1fr; gap: 0; }
 }
 </style>
@@ -99,8 +105,7 @@
   <ul class="nav-links">
     <li><a href="feed.html">Snaccs</a></li>
     <li><a href="drink.html">Drinks</a></li>
-    <li><a href="#" class="active">Log a Snacc</a></li>
-    <li><a href="log-drink.html">Log a Drink</a></li>
+    <li><a href="#" class="active">Log an Item</a></li>
     <li class="nav-profile">
       <button class="nav-username" id="nav-username"></button>
       <div class="nav-dropdown" id="nav-dropdown">
@@ -116,8 +121,12 @@
     <div class="step-dot" id="dot2"></div>
     <div class="step-dot" id="dot3"></div>
   </div>
-  <p class="section-label">Step 01 — Find your snacc</p>
-  <h1 class="big-heading"><span>What did<br>you eat?</span></h1>
+  <p class="section-label" id="find-label">Step 01 — Find your snacc</p>
+  <h1 class="big-heading"><span>What did<br>you have?</span></h1>
+  <div class="kind-toggle" aria-label="Choose item type">
+    <button class="kind-btn active" data-kind="snack">Snack</button>
+    <button class="kind-btn" data-kind="drink">Drink</button>
+  </div>
   <div class="search-wrap">
     <input class="search-input" id="search-input" type="text" placeholder="Cheetos Flamin Hot Puffs…" autocomplete="off"/>
     <button class="search-btn" id="search-btn">
@@ -132,7 +141,7 @@
     <p class="section-label" style="margin-bottom:1.5rem;">Enter the details</p>
     <div class="form-row">
       <div>
-        <label class="form-label">Snack name</label>
+        <label class="form-label" id="manual-name-label">Snack name</label>
         <input class="form-input" id="manual-name" type="text" placeholder="Cheetos Flamin' Hot Puffs"/>
       </div>
       <div>
@@ -187,8 +196,8 @@
     </div>
     <div class="vibe-options" id="vibe-options">
       <button class="vibe-option" data-vibe="eat">
-        <span class="label">Would Eat Again</span>
-        <span class="sublabel">Absolutely sending it</span>
+        <span class="label" id="eat-label">Would Eat Again</span>
+        <span class="sublabel" id="eat-sublabel">Absolutely sending it</span>
       </button>
       <button class="vibe-option" data-vibe="mid">
         <span class="label">Mid</span>
@@ -201,7 +210,7 @@
     </div>
     <button class="save-btn" id="save-btn">
       <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-      Log this Snacc
+      <span id="save-label">Log this Item</span>
     </button>
     <div class="success-msg" id="success-msg">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -216,7 +225,30 @@
 const user = requireAuth();
 if (user) {
   document.getElementById('nav-username').textContent = '@' + user.username;
-  const KIND = 'snack';
+  let KIND = new URLSearchParams(window.location.search).get('kind') === 'drink' ? 'drink' : 'snack';
+
+  const kindCopy = {
+    snack: {
+      label: 'Step 01 — Find your snacc',
+      searchPlaceholder: 'Cheetos Flamin Hot Puffs...',
+      nameLabel: 'Snack name',
+      namePlaceholder: "Cheetos Flamin' Hot Puffs",
+      brandPlaceholder: 'Cheetos',
+      eatLabel: 'Would Eat Again',
+      eatSublabel: 'Absolutely sending it',
+      saveLabel: 'Log this Item',
+    },
+    drink: {
+      label: 'Step 01 — Find your drink',
+      searchPlaceholder: 'Topo Chico Lime...',
+      nameLabel: 'Drink name',
+      namePlaceholder: 'Topo Chico Lime',
+      brandPlaceholder: 'Topo Chico',
+      eatLabel: 'Would Drink Again',
+      eatSublabel: 'Absolutely sipping it',
+      saveLabel: 'Log this Item',
+    },
+  };
 
   function setStep(n) {
     ['dot1','dot2','dot3'].forEach((id,i) => {
@@ -227,6 +259,41 @@ if (user) {
   }
 
   let selectedProduct=null, selectedVibe=null;
+
+  function applyKind(kind, reset = false) {
+    KIND = kind === 'drink' ? 'drink' : 'snack';
+    const copy = kindCopy[KIND];
+    document.getElementById('find-label').textContent = copy.label;
+    document.getElementById('search-input').placeholder = copy.searchPlaceholder;
+    document.getElementById('manual-name-label').textContent = copy.nameLabel;
+    document.getElementById('manual-name').placeholder = copy.namePlaceholder;
+    document.getElementById('manual-brand').placeholder = copy.brandPlaceholder;
+    document.getElementById('eat-label').textContent = copy.eatLabel;
+    document.getElementById('eat-sublabel').textContent = copy.eatSublabel;
+    document.getElementById('save-label').textContent = copy.saveLabel;
+    document.querySelectorAll('.kind-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.kind === KIND));
+
+    const nextUrl = KIND === 'drink' ? 'log.html?kind=drink' : 'log.html';
+    if (window.location.pathname.endsWith('log.html')) history.replaceState(null, '', nextUrl);
+
+    if (!reset) return;
+    selectedProduct = null; selectedVibe = null;
+    document.getElementById('results').innerHTML = '';
+    document.getElementById('results').classList.remove('visible');
+    document.getElementById('manual-form').classList.remove('show');
+    document.getElementById('rating-section').classList.remove('visible');
+    document.getElementById('save-btn').classList.remove('ready');
+    document.getElementById('success-msg').classList.remove('show');
+    document.querySelectorAll('.vibe-option').forEach(b=>b.classList.remove('picked'));
+    setStep(1);
+  }
+
+  document.querySelectorAll('.kind-btn').forEach(btn => {
+    btn.addEventListener('click', () => applyKind(btn.dataset.kind, true));
+    btn.addEventListener('mouseenter',()=>document.body.classList.add('hovering'));
+    btn.addEventListener('mouseleave',()=>document.body.classList.remove('hovering'));
+  });
+  applyKind(KIND);
 
   function _fetchWithTimeout(url, ms=12000) {
     const ctrl = new AbortController();
