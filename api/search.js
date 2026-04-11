@@ -6,9 +6,9 @@ export default async function handler(req, res) {
   const fields = 'code,product_name,brands,image_front_url';
 
   const [v2, cgi] = await Promise.allSettled([
-    fetch(`https://world.openfoodfacts.org/api/v2/search?q=${enc}&page_size=9&sort_by=unique_scans_n&countries_tags=en:united-states&fields=${fields}`)
+    fetch(`https://us.openfoodfacts.org/api/v2/search?q=${enc}&page_size=9&sort_by=popularity_key&fields=${fields}`)
       .then(r => r.ok ? r.json() : null).catch(() => null),
-    fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${enc}&search_simple=1&action=process&json=1&page_size=9&tagtype_0=countries&tag_contains_0=contains&tag_0=united-states&fields=id,product_name,brands,image_front_url`)
+    fetch(`https://us.openfoodfacts.org/cgi/search.pl?search_terms=${enc}&search_simple=1&action=process&json=1&page_size=9&fields=id,product_name,brands,image_front_url`)
       .then(r => r.ok ? r.json() : null).catch(() => null),
   ]);
 
