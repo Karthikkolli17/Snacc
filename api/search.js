@@ -33,7 +33,7 @@ export default async function handler(req, res) {
           .then(r => r.ok ? r.json() : null)
           .then(d => {
             const img = d?.product?.image_front_url;
-            if (img) imageMap[f.gtinUpc] = img;
+            if (img) imageMap[f.gtinUpc.replace(/^0+/, '')] = img;
           })
           .catch(() => null)
       )
@@ -43,7 +43,8 @@ export default async function handler(req, res) {
     id: `usda-${f.fdcId}`,
     name: f.description || '',
     brand: f.brandOwner || f.brandName || '',
-    image: (f.gtinUpc && imageMap[f.gtinUpc]) || null,
+    image: (f.gtinUpc && imageMap[f.gtinUpc.replace(/^0+/, '')]) || null,
+    source: 'USDA',
   }));
 
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
