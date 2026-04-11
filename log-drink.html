@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Snacc. — Log a Snacc</title>
+<title>Snacc. — Log a Drink</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bitcount+Prop+Single:wght@100..700&display=swap" rel="stylesheet">
@@ -99,8 +99,8 @@
   <ul class="nav-links">
     <li><a href="feed.html">Snaccs</a></li>
     <li><a href="drink.html">Drinks</a></li>
-    <li><a href="#" class="active">Log a Snacc</a></li>
-    <li><a href="log-drink.html">Log a Drink</a></li>
+    <li><a href="log.html">Log a Snacc</a></li>
+    <li><a href="#" class="active">Log a Drink</a></li>
     <li class="nav-profile">
       <button class="nav-username" id="nav-username"></button>
       <div class="nav-dropdown" id="nav-dropdown">
@@ -116,10 +116,10 @@
     <div class="step-dot" id="dot2"></div>
     <div class="step-dot" id="dot3"></div>
   </div>
-  <p class="section-label">Step 01 — Find your snacc</p>
-  <h1 class="big-heading"><span>What did<br>you eat?</span></h1>
+  <p class="section-label">Step 01 — Find your drink</p>
+  <h1 class="big-heading"><span>What did<br>you drink?</span></h1>
   <div class="search-wrap">
-    <input class="search-input" id="search-input" type="text" placeholder="Cheetos Flamin Hot Puffs…" autocomplete="off"/>
+    <input class="search-input" id="search-input" type="text" placeholder="Topo Chico Lime…" autocomplete="off"/>
     <button class="search-btn" id="search-btn">
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
     </button>
@@ -132,12 +132,12 @@
     <p class="section-label" style="margin-bottom:1.5rem;">Enter the details</p>
     <div class="form-row">
       <div>
-        <label class="form-label">Snack name</label>
-        <input class="form-input" id="manual-name" type="text" placeholder="Cheetos Flamin' Hot Puffs"/>
+        <label class="form-label">Drink name</label>
+        <input class="form-input" id="manual-name" type="text" placeholder="Topo Chico Lime"/>
       </div>
       <div>
         <label class="form-label">Brand</label>
-        <input class="form-input" id="manual-brand" type="text" placeholder="Cheetos"/>
+        <input class="form-input" id="manual-brand" type="text" placeholder="Topo Chico"/>
       </div>
     </div>
     <label class="form-label" style="margin-bottom:.6rem;">Photo <span style="opacity:.4">(optional)</span></label>
@@ -187,8 +187,8 @@
     </div>
     <div class="vibe-options" id="vibe-options">
       <button class="vibe-option" data-vibe="eat">
-        <span class="label">Would Eat Again</span>
-        <span class="sublabel">Absolutely sending it</span>
+        <span class="label">Would Drink Again</span>
+        <span class="sublabel">Absolutely sipping it</span>
       </button>
       <button class="vibe-option" data-vibe="mid">
         <span class="label">Mid</span>
@@ -201,7 +201,7 @@
     </div>
     <button class="save-btn" id="save-btn">
       <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-      Log this Snacc
+      Log this Drink
     </button>
     <div class="success-msg" id="success-msg">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -216,7 +216,7 @@
 const user = requireAuth();
 if (user) {
   document.getElementById('nav-username').textContent = '@' + user.username;
-  const KIND = 'snack';
+  const KIND = 'drink';
 
   function setStep(n) {
     ['dot1','dot2','dot3'].forEach((id,i) => {

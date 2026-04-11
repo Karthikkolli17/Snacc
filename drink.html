@@ -51,8 +51,8 @@
 <nav>
   <a href="feed.html" class="logo">Snacc.</a>
   <ul class="nav-links">
-    <li><a href="feed.html" class="active">Snaccs</a></li>
-    <li><a href="drink.html">Drinks</a></li>
+    <li><a href="feed.html">Snaccs</a></li>
+    <li><a href="drink.html" class="active">Drinks</a></li>
     <li><a href="log.html">Log a Snacc</a></li>
     <li><a href="log-drink.html">Log a Drink</a></li>
     <li class="nav-profile">
@@ -66,7 +66,7 @@
 </nav>
 <div class="catalog-wrap">
   <div class="catalog-header">
-    <h1 class="catalog-heading">Snacc Aisle.</h1>
+    <h1 class="catalog-heading">Drink Aisle.</h1>
   </div>
   <div class="catalog-grid" id="catalog"></div>
 </div>
@@ -75,7 +75,8 @@ const user = requireAuth();
 if (user) {
   document.getElementById('nav-username').textContent = '@' + user.username;
 
-  const KIND = 'snack';
+  const KIND = 'drink';
+  const vibeLabels = { eat: 'Would drink again', mid: 'Mid', never: 'Never again' };
   const noImgColors = ['#1a2a4a','#3a1a1a','#1a3a1a','#2a1a3a','#3a2a1a','#1a3a3a'];
 
   function buildCard(snack, delay) {
@@ -110,11 +111,10 @@ if (user) {
     ['eat','mid','never'].forEach(vibe => {
       const count = snack.counts[vibe];
       const pct = total > 0 ? Math.round((count / total) * 100) : 0;
-      const labels = { eat: 'Would eat again', mid: 'Mid', never: 'Never again' };
       const row = document.createElement('div');
       row.className = 'overlay-bar-row';
       row.innerHTML = `
-        <span class="overlay-bar-label">${labels[vibe]}</span>
+        <span class="overlay-bar-label">${vibeLabels[vibe]}</span>
         <span class="overlay-bar-count">${count}</span>
         <div class="overlay-bar-track"><div class="overlay-bar-fill"></div></div>`;
       overlay.appendChild(row);
@@ -144,14 +144,14 @@ if (user) {
     const { data, error } = await sb
       .from('ratings')
       .select('name, brand, image, vibe, kind')
-      .or('kind.eq.snack,kind.is.null');
+      .eq('kind', KIND);
 
     if (error || !data || !data.length) {
-      catalogEl.outerHTML = '<p class="catalog-empty">Nothing logged yet. Be the first.</p>';
+      catalogEl.outerHTML = '<p class="catalog-empty">No drinks logged yet. Be the first.</p>';
       return;
     }
 
-    // Aggregate by snack name
+    // Aggregate by drink name
     const map = {};
     data.forEach(r => {
       if (!map[r.name]) {
@@ -162,8 +162,8 @@ if (user) {
       map[r.name].total++;
     });
 
-    const snacks = Object.values(map).sort((a, b) => b.total - a.total);
-    snacks.forEach((s, i) => catalogEl.appendChild(buildCard(s, i * 40)));
+    const drinks = Object.values(map).sort((a, b) => b.total - a.total);
+    drinks.forEach((s, i) => catalogEl.appendChild(buildCard(s, i * 40)));
   }
 
   render();

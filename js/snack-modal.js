@@ -1,5 +1,8 @@
 const _noImgColors = ['#1a2a4a','#3a1a1a','#1a3a1a','#2a1a3a','#3a2a1a','#1a3a3a'];
-const _vibeLabels  = { eat: 'Would Eat Again', mid: 'Mid', never: 'Never Again' };
+const _vibeLabels  = {
+  snack: { eat: 'Would Eat Again', mid: 'Mid', never: 'Never Again' },
+  drink: { eat: 'Would Drink Again', mid: 'Mid', never: 'Never Again' },
+};
 
 document.body.insertAdjacentHTML('beforeend', `
 <div class="snack-backdrop" id="snack-backdrop">
@@ -124,6 +127,7 @@ async function _fetchNutrition(barcode) {
 }
 
 async function openSnackModal(snack) {
+  const kind = snack.kind === 'drink' ? 'drink' : 'snack';
   const imgBg  = document.getElementById('snack-img-bg');
   const img    = document.getElementById('snack-img');
   const barsEl = document.getElementById('snack-bars');
@@ -140,25 +144,29 @@ async function openSnackModal(snack) {
   barsEl.innerHTML = '';
   logsEl.innerHTML = '';
   nutEl.innerHTML  = '';
+  document.querySelector('.snack-info-col')?.classList.remove('has-nutrition');
 
   _backdrop.classList.add('open');
   _modal.scrollTop = 0;
 
-  const { data } = await sb
+  let query = sb
     .from('ratings')
-    .select('vibe, logged_at, barcode, nutrition, users(username)')
+    .select('vibe, logged_at, barcode, nutrition, kind, users(username)')
     .eq('name', snack.name)
     .order('logged_at', { ascending: false });
 
+  query = kind === 'snack' ? query.or('kind.eq.snack,kind.is.null') : query.eq('kind', kind);
+  const { data } = await query;
+
   if (!data || !data.length) {
-    document.getElementById('snack-info-count').textContent = 'No ratings yet';
+    document.getElementById('snack-info-count').textContent = kind === 'drink' ? 'No drink ratings yet' : 'No ratings yet';
     return;
   }
 
   const counts = { eat: 0, mid: 0, never: 0 };
   data.forEach(r => { if (r.vibe in counts) counts[r.vibe]++; });
   const total = data.length;
-  document.getElementById('snack-info-count').textContent = total + (total === 1 ? ' person tried this' : ' people tried this');
+  document.getElementById('snack-info-count').textContent = total + (total === 1 ? ' person logged this' : ' people logged this');
 
   ['eat','mid','never'].forEach(vibe => {
     const count = counts[vibe];
@@ -166,7 +174,7 @@ async function openSnackModal(snack) {
     const row   = document.createElement('div');
     row.className = 'snack-bar-row';
     row.innerHTML = `
-      <span class="snack-bar-label">${_vibeLabels[vibe]}</span>
+      <span class="snack-bar-label">${_vibeLabels[kind][vibe]}</span>
       <span class="snack-bar-count">${count}</span>
       <div class="snack-bar-track"><div class="snack-bar-fill"></div></div>`;
     barsEl.appendChild(row);

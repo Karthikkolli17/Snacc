@@ -64,11 +64,13 @@
   <a href="feed.html" class="logo">Snacc.</a>
   <ul class="nav-links">
     <li><a href="feed.html">Snaccs</a></li>
+    <li><a href="drink.html">Drinks</a></li>
     <li><a href="log.html">Log a Snacc</a></li>
+    <li><a href="log-drink.html">Log a Drink</a></li>
     <li class="nav-profile">
       <button class="nav-username" id="nav-username"></button>
       <div class="nav-dropdown" id="nav-dropdown">
-        <a href="index.html">My Snaccs</a>
+        <a href="index.html">My Logs</a>
         <button onclick="logout()">Sign out</button>
       </div>
     </li>
@@ -76,18 +78,18 @@
 </nav>
 <div class="empty" id="empty">
   <p class="empty-heading">Nothing<br>yet.</p>
-  <p class="empty-sub">You haven't logged any snaccs.<br>Get eating.</p>
+  <p class="empty-sub">You haven't logged anything.<br>Get tasting.</p>
   <a href="log.html" class="empty-cta">
     <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    Log your first snacc
+    Log your first thing
   </a>
 </div>
 <div class="grid-wrap"><div class="grid" id="grid"></div></div>
 <div class="popup-backdrop" id="popup-backdrop">
   <div class="popup">
     <p class="popup-label">Are you sure?</p>
-    <p class="popup-heading">Delete<br>this snacc?</p>
-    <p class="popup-sub">You're about to remove <span class="popup-name" id="popup-name"></span> from your snaccs. This can't be undone.</p>
+    <p class="popup-heading">Delete<br>this log?</p>
+    <p class="popup-sub">You're about to remove <span class="popup-name" id="popup-name"></span> from your logs. This can't be undone.</p>
     <div class="popup-actions">
       <button class="popup-cancel" id="popup-cancel">Keep it</button>
       <button class="popup-confirm" id="popup-confirm">Delete it</button>
@@ -100,9 +102,16 @@ if (user) {
   document.getElementById('nav-username').textContent = '@' + user.username;
 
   const vibeMap = {
-    eat:   { label:'Would Eat Again', cls:'vibe-eat'   },
-    mid:   { label:'Mid',             cls:'vibe-mid'   },
-    never: { label:'Never Again',     cls:'vibe-never' },
+    snack: {
+      eat:   { label:'Would Eat Again', cls:'vibe-eat'   },
+      mid:   { label:'Mid',             cls:'vibe-mid'   },
+      never: { label:'Never Again',     cls:'vibe-never' },
+    },
+    drink: {
+      eat:   { label:'Would Drink Again', cls:'vibe-eat'   },
+      mid:   { label:'Mid',               cls:'vibe-mid'   },
+      never: { label:'Never Again',       cls:'vibe-never' },
+    },
   };
   const noImgColors = ['#1a2a4a','#3a1a1a','#1a3a1a','#2a1a3a','#3a2a1a','#1a3a3a'];
 
@@ -136,7 +145,8 @@ if (user) {
   });
 
   function buildCard(snack, delay) {
-    const v = vibeMap[snack.vibe] || vibeMap.mid;
+    const kind = snack.kind === 'drink' ? 'drink' : 'snack';
+    const v = vibeMap[kind][snack.vibe] || vibeMap[kind].mid;
     const card = document.createElement('div'); card.className = 'card';
 
     // Image area
