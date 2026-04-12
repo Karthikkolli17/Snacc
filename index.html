@@ -25,8 +25,10 @@
 .warehouse-main { flex: 1; min-width: 0; padding: 1.5rem 0 0 2rem; }
 .wh-section { margin-bottom: 2.5rem; }
 .wh-section-title { font-size: 0.6rem; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin-bottom: 1rem; padding-bottom: .6rem; border-bottom: 1px solid var(--border); }
-.wh-scroll { display: flex; gap: 0; overflow-x: auto; overflow-y: hidden; border-left: 1px solid var(--border); border-top: 1px solid var(--border); -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
-.wh-scroll .card { flex: 0 0 230px; }
+.wh-scroll { display: grid; grid-template-columns: repeat(3, 1fr); border-left: 1px solid var(--border); border-top: 1px solid var(--border); }
+.wh-scroll .card { min-width: 0; }
+.wh-scroll .card:first-child { grid-row: span 2; display: flex; flex-direction: column; }
+.wh-scroll .card:first-child .card-img-wrap { aspect-ratio: unset; flex: 1; min-height: 0; }
 .wh-viz { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--border); margin-top: 0; }
 .wh-viz-half { padding: 1.25rem 1.5rem 1.5rem; border-right: 1px solid var(--border); }
 .wh-viz-half:last-child { border-right: none; }
@@ -92,6 +94,9 @@
   .warehouse-body { flex-direction: column; }
   .warehouse-rail { width: 100%; border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 1.25rem; margin-bottom: .5rem; }
   .warehouse-main { padding-left: 0; padding-top: 1.5rem; }
+  .wh-scroll { grid-template-columns: repeat(2, 1fr); }
+  .wh-scroll .card:first-child { grid-row: span 1; display: block; }
+  .wh-scroll .card:first-child .card-img-wrap { aspect-ratio: 1/1; flex: unset; }
   .wh-viz { grid-template-columns: 1fr; }
   .wh-viz-half { border-right: none; border-bottom: 1px solid var(--border); }
   .wh-viz-half:last-child { border-bottom: none; }

@@ -145,65 +145,31 @@ if (user) {
     return card;
   }
 
-  let _allData = [];
   let _activeCountryFilter = new URLSearchParams(window.location.search).get('country') || null;
 
   function aggregate(rows) {
     const map = {};
     rows.forEach(r => {
       if (!map[r.name]) {
-        map[r.name] = { name: r.name, brand: r.brand, image: null, country: null, _countryCounts: {}, counts: { eat: 0, mid: 0, never: 0 }, total: 0 };
+        map[r.name] = { name: r.name, brand: r.brand, image: null, country: null, _cc: {}, counts: { eat: 0, mid: 0, never: 0 }, total: 0 };
       }
       if (!map[r.name].image && r.image) map[r.name].image = r.image;
-      if (r.country) map[r.name]._countryCounts[r.country] = (map[r.name]._countryCounts[r.country]||0) + 1;
+      if (r.country) map[r.name]._cc[r.country] = (map[r.name]._cc[r.country]||0) + 1;
       if (r.vibe in map[r.name].counts) map[r.name].counts[r.vibe]++;
       map[r.name].total++;
     });
     Object.values(map).forEach(s => {
-      const cc = s._countryCounts;
-      const top = Object.keys(cc).sort((a,b) => cc[b]-cc[a])[0];
+      const top = Object.keys(s._cc).sort((a,b) => s._cc[b]-s._cc[a])[0];
       s.country = top || null;
     });
     return Object.values(map).sort((a, b) => b.total - a.total);
   }
 
-  function renderCards(snacks) {
-    const catalogEl = document.getElementById('catalog');
-    catalogEl.innerHTML = '';
-    if (!snacks.length) {
-      catalogEl.outerHTML = '<p class="catalog-empty">No drinks logged yet. Be the first.</p>';
-      return;
-    }
-    snacks.forEach((s, i) => catalogEl.appendChild(buildCard(s, i * 40)));
-  }
-
-  function buildFilter(rows) {
-    const countries = {};
-    rows.forEach(r => { if (r.country) countries[r.country] = (countries[r.country]||0) + 1; });
-    const sorted = Object.keys(countries).sort((a,b) => countries[b]-countries[a]);
-    const filterEl = document.getElementById('country-filter');
-    if (!sorted.length) return;
-    const allBtn = document.createElement('button');
-    allBtn.className = 'country-filter-btn' + (!_activeCountryFilter ? ' active' : '');
-    allBtn.textContent = 'All';
-    allBtn.dataset.country = '';
-    allBtn.addEventListener('click', () => { _activeCountryFilter = null; applyFilter(); });
-    filterEl.appendChild(allBtn);
-    sorted.forEach(code => {
-      const btn = document.createElement('button');
-      btn.className = 'country-filter-btn' + (_activeCountryFilter === code ? ' active' : '');
-      btn.textContent = `${countryFlag(code)} ${countryName(code)}`;
-      btn.dataset.country = code;
-      btn.addEventListener('click', () => { _activeCountryFilter = code; applyFilter(); });
-      btn.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
-      btn.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
-      filterEl.appendChild(btn);
-    });
-  }
-
   function applyFilter() {
-    const filtered = _activeCountryFilter ? _allData.filter(r => r.country === _activeCountryFilter) : _allData;
-    renderCards(aggregate(filtered));
+    document.querySelectorAll('.snack-card[data-country]').forEach(card => {
+      const match = !_activeCountryFilter || card.dataset.country === _activeCountryFilter;
+      card.style.display = match ? '' : 'none';
+    });
     document.querySelectorAll('.country-filter-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.country === (_activeCountryFilter || ''));
     });
@@ -220,10 +186,35 @@ if (user) {
       return;
     }
 
-    _allData = data;
-    buildFilter(data);
-    const filtered = _activeCountryFilter ? data.filter(r => r.country === _activeCountryFilter) : data;
-    renderCards(aggregate(filtered));
+    const drinks = aggregate(data);
+    const catalogEl = document.getElementById('catalog');
+    drinks.forEach((s, i) => {
+      const card = buildCard(s, i * 40);
+      card.dataset.country = s.country || '';
+      if (_activeCountryFilter && s.country !== _activeCountryFilter) card.style.display = 'none';
+      catalogEl.appendChild(card);
+    });
+
+    const countries = {};
+    drinks.forEach(s => { if (s.country) countries[s.country] = (countries[s.country]||0) + s.total; });
+    const sorted = Object.keys(countries).sort((a,b) => countries[b]-countries[a]);
+    const filterEl = document.getElementById('country-filter');
+    if (!sorted.length) return;
+    const allBtn = document.createElement('button');
+    allBtn.className = 'country-filter-btn' + (!_activeCountryFilter ? ' active' : '');
+    allBtn.textContent = 'All'; allBtn.dataset.country = '';
+    allBtn.addEventListener('click', () => { _activeCountryFilter = null; applyFilter(); });
+    filterEl.appendChild(allBtn);
+    sorted.forEach(code => {
+      const btn = document.createElement('button');
+      btn.className = 'country-filter-btn' + (_activeCountryFilter === code ? ' active' : '');
+      btn.textContent = `${countryFlag(code)} ${countryName(code)}`;
+      btn.dataset.country = code;
+      btn.addEventListener('click', () => { _activeCountryFilter = code; applyFilter(); });
+      btn.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+      btn.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+      filterEl.appendChild(btn);
+    });
   }
 
   render();
