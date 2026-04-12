@@ -32,7 +32,7 @@ Return only the JSON, no explanation.`;
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -50,7 +50,8 @@ Return only the JSON, no explanation.`;
 
     if (!response.ok) {
       const err = await response.text();
-      return res.status(502).json({ error: 'Gemini error', detail: err });
+      console.error('Gemini API error:', response.status, err);
+      return res.status(502).json({ error: `Gemini ${response.status}: ${err.slice(0, 200)}` });
     }
 
     const data = await response.json();
