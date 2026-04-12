@@ -101,6 +101,7 @@
 .country-list { list-style: none; padding: 0; margin: 0; }
 .country-list li { padding: .55rem .8rem; font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; cursor: none; transition: background .15s; }
 .country-list li:hover { background: var(--ink); color: var(--bg); }
+.nut-drink-only { display: none; }
 @media (max-width: 700px) {
   .page { padding: 2.5rem 1.25rem 5rem; }
   .results { grid-template-columns: repeat(2, 1fr); }
@@ -186,13 +187,14 @@
     <div class="nut-grid">
       <div><label class="form-label">Serving size</label><input class="form-input" id="nut-serving" placeholder="28g"/></div>
       <div><label class="form-label">Calories</label><input class="form-input" id="nut-cal" type="number" placeholder="150"/></div>
-      <div><label class="form-label">Total fat (g)</label><input class="form-input" id="nut-fat" type="number" placeholder="8"/></div>
-      <div><label class="form-label">Saturated fat (g)</label><input class="form-input" id="nut-satfat" type="number" placeholder="1.5"/></div>
-      <div><label class="form-label">Sodium (mg)</label><input class="form-input" id="nut-sodium" type="number" placeholder="190"/></div>
-      <div><label class="form-label">Total carbs (g)</label><input class="form-input" id="nut-carbs" type="number" placeholder="18"/></div>
-      <div><label class="form-label">Dietary fiber (g)</label><input class="form-input" id="nut-fiber" type="number" placeholder="1"/></div>
       <div><label class="form-label">Total sugars (g)</label><input class="form-input" id="nut-sugars" type="number" placeholder="2"/></div>
-      <div><label class="form-label">Protein (g)</label><input class="form-input" id="nut-protein" type="number" placeholder="2"/></div>
+      <div><label class="form-label">Total carbs (g)</label><input class="form-input" id="nut-carbs" type="number" placeholder="18"/></div>
+      <div><label class="form-label">Sodium (mg)</label><input class="form-input" id="nut-sodium" type="number" placeholder="190"/></div>
+      <div class="nut-drink-only"><label class="form-label">Caffeine (mg)</label><input class="form-input" id="nut-caffeine" type="number" placeholder="80"/></div>
+      <div class="nut-snack-only"><label class="form-label">Total fat (g)</label><input class="form-input" id="nut-fat" type="number" placeholder="8"/></div>
+      <div class="nut-snack-only"><label class="form-label">Saturated fat (g)</label><input class="form-input" id="nut-satfat" type="number" placeholder="1.5"/></div>
+      <div class="nut-snack-only"><label class="form-label">Dietary fiber (g)</label><input class="form-input" id="nut-fiber" type="number" placeholder="1"/></div>
+      <div class="nut-snack-only"><label class="form-label">Protein (g)</label><input class="form-input" id="nut-protein" type="number" placeholder="2"/></div>
     </div>
     <button class="manual-confirm-btn" id="manual-confirm">Use this →</button>
   </div>
@@ -333,6 +335,9 @@ if (user) {
     document.getElementById('eat-sublabel').textContent = copy.eatSublabel;
     document.getElementById('save-label').textContent = copy.saveLabel;
     document.querySelectorAll('.kind-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.kind === KIND));
+    const isDrink = KIND === 'drink';
+    document.querySelectorAll('.nut-drink-only').forEach(el => el.style.display = isDrink ? '' : 'none');
+    document.querySelectorAll('.nut-snack-only').forEach(el => el.style.display = isDrink ? 'none' : '');
 
     const nextUrl = KIND === 'drink' ? 'log.html?kind=drink' : 'log.html';
     if (window.location.pathname.endsWith('log.html')) history.replaceState(null, '', nextUrl);
@@ -502,47 +507,67 @@ if (user) {
     const status = document.getElementById('nut-status');
     status.textContent = 'Scanning…';
     try {
+      // Resize to max 1200px and compress to JPEG before sending
       const base64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          const maxDim = 1200;
+          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(url);
+          resolve(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
+        };
+        img.onerror = reject;
+        img.src = url;
       });
 
       const res = await fetch('/api/ocr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64 }),
+        body: JSON.stringify({ image: base64, kind: KIND }),
       });
       if (!res.ok) throw new Error('OCR request failed');
       const parsed = await res.json();
 
       if (parsed.serving) document.getElementById('nut-serving').value = parsed.serving;
       if (parsed.calories != null) document.getElementById('nut-cal').value = parsed.calories;
-      if (parsed.fat != null) document.getElementById('nut-fat').value = parsed.fat;
-      if (parsed.satFat != null) document.getElementById('nut-satfat').value = parsed.satFat;
-      if (parsed.sodium != null) document.getElementById('nut-sodium').value = parsed.sodium;
-      if (parsed.carbs != null) document.getElementById('nut-carbs').value = parsed.carbs;
-      if (parsed.fiber != null) document.getElementById('nut-fiber').value = parsed.fiber;
       if (parsed.sugars != null) document.getElementById('nut-sugars').value = parsed.sugars;
-      if (parsed.protein != null) document.getElementById('nut-protein').value = parsed.protein;
+      if (parsed.carbs != null) document.getElementById('nut-carbs').value = parsed.carbs;
+      if (parsed.sodium != null) document.getElementById('nut-sodium').value = parsed.sodium;
+      if (KIND === 'drink') {
+        if (parsed.caffeine != null) document.getElementById('nut-caffeine').value = parsed.caffeine;
+      } else {
+        if (parsed.fat != null) document.getElementById('nut-fat').value = parsed.fat;
+        if (parsed.satFat != null) document.getElementById('nut-satfat').value = parsed.satFat;
+        if (parsed.fiber != null) document.getElementById('nut-fiber').value = parsed.fiber;
+        if (parsed.protein != null) document.getElementById('nut-protein').value = parsed.protein;
+      }
       status.textContent = 'Done — check the values below.';
     } catch(e) { status.textContent = 'Scan failed — fill in manually.'; }
   });
 
 
   function _getNutritionFields() {
-    const n = {
+    const base = {
       serving: document.getElementById('nut-serving').value.trim()||null,
       calories: parseFloat(document.getElementById('nut-cal').value)||null,
-      fat: parseFloat(document.getElementById('nut-fat').value)||null,
-      satFat: parseFloat(document.getElementById('nut-satfat').value)||null,
-      sodium: parseFloat(document.getElementById('nut-sodium').value)||null,
-      carbs: parseFloat(document.getElementById('nut-carbs').value)||null,
-      fiber: parseFloat(document.getElementById('nut-fiber').value)||null,
       sugars: parseFloat(document.getElementById('nut-sugars').value)||null,
-      protein: parseFloat(document.getElementById('nut-protein').value)||null,
+      carbs: parseFloat(document.getElementById('nut-carbs').value)||null,
+      sodium: parseFloat(document.getElementById('nut-sodium').value)||null,
     };
+    const extra = KIND === 'drink'
+      ? { caffeine: parseFloat(document.getElementById('nut-caffeine').value)||null }
+      : {
+          fat: parseFloat(document.getElementById('nut-fat').value)||null,
+          satFat: parseFloat(document.getElementById('nut-satfat').value)||null,
+          fiber: parseFloat(document.getElementById('nut-fiber').value)||null,
+          protein: parseFloat(document.getElementById('nut-protein').value)||null,
+        };
+    const n = { ...base, ...extra };
     return Object.values(n).some(v=>v!==null) ? n : null;
   }
 

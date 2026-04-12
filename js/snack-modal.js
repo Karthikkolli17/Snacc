@@ -89,10 +89,11 @@ function _renderNutrition(product) {
     </div>`;
 }
 
-function _renderStoredNutrition(n) {
+function _renderStoredNutrition(n, kind) {
   const el = document.getElementById('snack-nutrition');
   if (!el) return;
   const per = n.serving ? `per serving (${n.serving})` : 'per serving';
+  const isDrink = kind === 'drink';
   el.innerHTML = `
     <p class="snack-nut-per">${per}</p>
     <div class="nutrition-label">
@@ -103,16 +104,23 @@ function _renderStoredNutrition(n) {
         <span class="nutrition-cal-val">${n.calories??'—'}</span>
       </div>
       <div class="nutrition-bar thick"></div>
+      <div class="nutrition-row"><strong>Total Sugars</strong> <span>${n.sugars!=null?n.sugars+'g':'—'}</span></div>
+      <div class="nutrition-bar"></div>
+      <div class="nutrition-row"><strong>Total Carbohydrate</strong> <span>${n.carbs!=null?n.carbs+'g':'—'}</span></div>
+      <div class="nutrition-bar"></div>
+      <div class="nutrition-row"><strong>Sodium</strong> <span>${n.sodium!=null?n.sodium+'mg':'—'}</span></div>
+      ${isDrink ? `
+      <div class="nutrition-bar"></div>
+      <div class="nutrition-row"><strong>Caffeine</strong> <span>${n.caffeine!=null?n.caffeine+'mg':'—'}</span></div>
+      ` : `
+      <div class="nutrition-bar"></div>
       <div class="nutrition-row"><strong>Total Fat</strong> <span>${n.fat!=null?n.fat+'g':'—'}</span></div>
       <div class="nutrition-row indent">Saturated Fat <span>${n.satFat!=null?n.satFat+'g':'—'}</span></div>
       <div class="nutrition-bar"></div>
-      <div class="nutrition-row"><strong>Sodium</strong> <span>${n.sodium!=null?n.sodium+'mg':'—'}</span></div>
-      <div class="nutrition-bar"></div>
-      <div class="nutrition-row"><strong>Total Carbohydrate</strong> <span>${n.carbs!=null?n.carbs+'g':'—'}</span></div>
       <div class="nutrition-row indent">Dietary Fiber <span>${n.fiber!=null?n.fiber+'g':'—'}</span></div>
-      <div class="nutrition-row indent">Total Sugars <span>${n.sugars!=null?n.sugars+'g':'—'}</span></div>
       <div class="nutrition-bar"></div>
       <div class="nutrition-row"><strong>Protein</strong> <span>${n.protein!=null?n.protein+'g':'—'}</span></div>
+      `}
     </div>`;
 }
 
@@ -206,7 +214,7 @@ async function openSnackModal(snack) {
     _fetchNutrition(barcode);
     document.querySelector('.snack-info-col')?.classList.add('has-nutrition');
   } else if (storedNutrition) {
-    _renderStoredNutrition(storedNutrition);
+    _renderStoredNutrition(storedNutrition, kind);
     document.querySelector('.snack-info-col')?.classList.add('has-nutrition');
   }
 }

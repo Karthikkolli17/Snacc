@@ -1,12 +1,24 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { image } = req.body;
+  const { image, kind } = req.body;
   if (!image) return res.status(400).json({ error: 'Missing image' });
 
-  const prompt = `You are a nutrition label parser. Extract all nutrition facts from this image and return ONLY a valid JSON object with these exact keys (use null if not found):
+  const isDrink = kind === 'drink';
+  const prompt = isDrink
+    ? `You are a nutrition label parser for beverages. Extract nutrition facts from this image and return ONLY a valid JSON object with these exact keys (use null if not found):
 {
-  "serving": "serving size as a string e.g. 28g or 1 cup (240ml)",
+  "serving": "serving size as a string e.g. 240ml or 12 fl oz",
+  "calories": number or null,
+  "sugars": number or null,
+  "carbs": number or null,
+  "sodium": number or null,
+  "caffeine": number in mg or null
+}
+Return only the JSON, no explanation.`
+    : `You are a nutrition label parser. Extract all nutrition facts from this image and return ONLY a valid JSON object with these exact keys (use null if not found):
+{
+  "serving": "serving size as a string e.g. 28g or 1 cup",
   "calories": number or null,
   "fat": number or null,
   "satFat": number or null,
