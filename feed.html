@@ -186,12 +186,14 @@ if (user) {
     const allBtn = document.createElement('button');
     allBtn.className = 'country-filter-btn' + (!_activeCountryFilter ? ' active' : '');
     allBtn.textContent = 'All';
+    allBtn.dataset.country = '';
     allBtn.addEventListener('click', () => { _activeCountryFilter = null; applyFilter(); });
     filterEl.appendChild(allBtn);
     sorted.forEach(code => {
       const btn = document.createElement('button');
       btn.className = 'country-filter-btn' + (_activeCountryFilter === code ? ' active' : '');
       btn.textContent = `${countryFlag(code)} ${countryName(code)}`;
+      btn.dataset.country = code;
       btn.addEventListener('click', () => { _activeCountryFilter = code; applyFilter(); });
       btn.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
       btn.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
@@ -203,7 +205,7 @@ if (user) {
     const filtered = _activeCountryFilter ? _allData.filter(r => r.country === _activeCountryFilter) : _allData;
     renderCards(aggregate(filtered));
     document.querySelectorAll('.country-filter-btn').forEach(btn => {
-      btn.classList.toggle('active', (_activeCountryFilter ? `${countryFlag(_activeCountryFilter)} ${countryName(_activeCountryFilter)}` : 'All') === btn.textContent);
+      btn.classList.toggle('active', btn.dataset.country === (_activeCountryFilter || ''));
     });
   }
 

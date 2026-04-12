@@ -13,7 +13,8 @@ export default async function handler(req, res) {
   "sugars": number or null,
   "carbs": number or null,
   "sodium": number or null,
-  "caffeine": number in mg or null
+  "caffeine": number in mg or null,
+  "protein": number or null
 }
 Return only the JSON, no explanation.`
     : `You are a nutrition label parser. Extract all nutrition facts from this image and return ONLY a valid JSON object with these exact keys (use null if not found):

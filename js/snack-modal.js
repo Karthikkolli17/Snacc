@@ -112,6 +112,8 @@ function _renderStoredNutrition(n, kind) {
       ${isDrink ? `
       <div class="nutrition-bar"></div>
       <div class="nutrition-row"><strong>Caffeine</strong> <span>${n.caffeine!=null?n.caffeine+'mg':'—'}</span></div>
+      <div class="nutrition-bar"></div>
+      <div class="nutrition-row"><strong>Protein</strong> <span>${n.protein!=null?n.protein+'g':'—'}</span></div>
       ` : `
       <div class="nutrition-bar"></div>
       <div class="nutrition-row"><strong>Total Fat</strong> <span>${n.fat!=null?n.fat+'g':'—'}</span></div>

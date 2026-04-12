@@ -191,6 +191,7 @@
       <div><label class="form-label">Total carbs (g)</label><input class="form-input" id="nut-carbs" type="number" placeholder="18"/></div>
       <div><label class="form-label">Sodium (mg)</label><input class="form-input" id="nut-sodium" type="number" placeholder="190"/></div>
       <div class="nut-drink-only"><label class="form-label">Caffeine (mg)</label><input class="form-input" id="nut-caffeine" type="number" placeholder="80"/></div>
+      <div class="nut-drink-only"><label class="form-label">Protein (g)</label><input class="form-input" id="nut-protein-drink" type="number" placeholder="8"/></div>
       <div class="nut-snack-only"><label class="form-label">Total fat (g)</label><input class="form-input" id="nut-fat" type="number" placeholder="8"/></div>
       <div class="nut-snack-only"><label class="form-label">Saturated fat (g)</label><input class="form-input" id="nut-satfat" type="number" placeholder="1.5"/></div>
       <div class="nut-snack-only"><label class="form-label">Dietary fiber (g)</label><input class="form-input" id="nut-fiber" type="number" placeholder="1"/></div>
@@ -545,6 +546,7 @@ if (user) {
       if (parsed.sodium != null) document.getElementById('nut-sodium').value = parsed.sodium;
       if (KIND === 'drink') {
         if (parsed.caffeine != null) document.getElementById('nut-caffeine').value = parsed.caffeine;
+        if (parsed.protein != null) document.getElementById('nut-protein-drink').value = parsed.protein;
       } else {
         if (parsed.fat != null) document.getElementById('nut-fat').value = parsed.fat;
         if (parsed.satFat != null) document.getElementById('nut-satfat').value = parsed.satFat;
@@ -565,7 +567,10 @@ if (user) {
       sodium: parseFloat(document.getElementById('nut-sodium').value)||null,
     };
     const extra = KIND === 'drink'
-      ? { caffeine: parseFloat(document.getElementById('nut-caffeine').value)||null }
+      ? {
+          caffeine: parseFloat(document.getElementById('nut-caffeine').value)||null,
+          protein: parseFloat(document.getElementById('nut-protein-drink').value)||null,
+        }
       : {
           fat: parseFloat(document.getElementById('nut-fat').value)||null,
           satFat: parseFloat(document.getElementById('nut-satfat').value)||null,
