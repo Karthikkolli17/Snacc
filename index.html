@@ -242,12 +242,21 @@ if (user) {
   actionBackdrop.addEventListener('click', e => { if (e.target === actionBackdrop) closeAction(); });
   document.getElementById('action-cancel').addEventListener('click', closeAction);
 
+  async function _apiPost(path, body) {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return res.json();
+  }
+
   document.querySelectorAll('.edit-vibe-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (!activeRow) return;
       const v = btn.dataset.vibe;
-      const { error } = await sb.from('ratings').update({ vibe: v }).eq('id', activeRow.id);
-      if (error) { alert('Failed to update: ' + error.message); return; }
+      const result = await _apiPost('/api/update-rating', { ratingId: activeRow.id, userId: user.id, vibe: v });
+      if (result.error) { alert('Failed to update: ' + result.error); return; }
       closeAction(); await render();
     });
     btn.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
@@ -269,9 +278,9 @@ if (user) {
     });
     const btn = document.getElementById('nut-save-btn');
     btn.textContent = 'Saving…'; btn.disabled = true;
-    const { error } = await sb.from('ratings').update({ nutrition: n }).eq('id', activeRow.id);
+    const result = await _apiPost('/api/update-rating', { ratingId: activeRow.id, userId: user.id, nutrition: n });
     btn.textContent = 'Save nutrition'; btn.disabled = false;
-    if (error) { alert('Failed: ' + error.message); return; }
+    if (result.error) { alert('Failed: ' + result.error); return; }
     closeAction();
     await render();
   });
@@ -287,7 +296,7 @@ if (user) {
     }
     const id = activeRow.id;
     closeAction();
-    await sb.from('ratings').delete().eq('id', id);
+    await _apiPost('/api/delete-rating', { ratingId: id, userId: user.id });
     await render();
   });
 
