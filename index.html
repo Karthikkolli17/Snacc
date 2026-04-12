@@ -27,8 +27,8 @@
 .wh-section-title { font-size: 0.6rem; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin-bottom: 1rem; padding-bottom: .6rem; border-bottom: 1px solid var(--border); }
 .wh-scroll { display: grid; grid-template-columns: repeat(3, 1fr); border-left: 1px solid var(--border); border-top: 1px solid var(--border); }
 .wh-scroll .card { min-width: 0; }
-.wh-scroll .card:first-child { grid-row: span 2; display: flex; flex-direction: column; }
-.wh-scroll .card:first-child .card-img-wrap { aspect-ratio: unset; flex: 1; min-height: 0; }
+.wh-scroll .card.featured { grid-row: span 2; display: flex; flex-direction: column; }
+.wh-scroll .card.featured .card-img-wrap { aspect-ratio: unset; flex: 1; min-height: 0; }
 .wh-viz { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--border); margin-top: 0; }
 .wh-viz-half { padding: 1.25rem 1.5rem 1.5rem; border-right: 1px solid var(--border); }
 .wh-viz-half:last-child { border-right: none; }
@@ -65,9 +65,8 @@
 .card-menu-btn:hover { background: rgba(0,0,0,.75); }
 .card-menu-btn svg { width: 12px; height: 12px; fill: #fff; }
 .card-info { padding: .75rem 1rem; border-top: 1px solid var(--border); }
-.card-name { font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: .25rem; }
-.card-meta { display: flex; align-items: center; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
-.card-brand { font-size: .52rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.card-name { font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: .2rem; }
+.card-brand { font-size: .52rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: .45rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .popup-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.25); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); z-index: 200; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .3s ease; }
 .popup-backdrop.show { opacity: 1; pointer-events: all; }
 .popup { background: rgba(238,235,227,0.88); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); padding: 2.5rem 2.5rem 2rem; max-width: 320px; width: 90%; transform: translateY(20px) scale(.97); transition: transform .35s cubic-bezier(.16,1,.3,1); }
@@ -95,8 +94,8 @@
   .warehouse-rail { width: 100%; border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 1.25rem; margin-bottom: .5rem; }
   .warehouse-main { padding-left: 0; padding-top: 1.5rem; }
   .wh-scroll { grid-template-columns: repeat(2, 1fr); }
-  .wh-scroll .card:first-child { grid-row: span 1; display: block; }
-  .wh-scroll .card:first-child .card-img-wrap { aspect-ratio: 1/1; flex: unset; }
+  .wh-scroll .card.featured { grid-row: span 1; display: block; }
+  .wh-scroll .card.featured .card-img-wrap { aspect-ratio: 1/1; flex: unset; }
   .wh-viz { grid-template-columns: 1fr; }
   .wh-viz-half { border-right: none; border-bottom: 1px solid var(--border); }
   .wh-viz-half:last-child { border-bottom: none; }
@@ -281,7 +280,7 @@ if (user) {
     imgWrap.appendChild(menuBtn);
 
     const info = document.createElement('div'); info.className = 'card-info';
-    info.innerHTML = '<p class="card-name">' + row.name + '</p><div class="card-meta"><span class="card-brand">' + (row.brand || '') + '</span><span class="vibe-badge ' + cls + '">' + v + '</span></div>';
+    info.innerHTML = '<p class="card-name">' + row.name + '</p><p class="card-brand">' + (row.brand || '') + '</p><span class="vibe-badge ' + cls + '">' + v + '</span>';
     card.append(imgWrap, info);
     card.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
     card.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
@@ -339,6 +338,8 @@ if (user) {
     drinkScroll.innerHTML = '';
     snacks.forEach((s, i) => snackScroll.appendChild(buildCard(s, i * 50)));
     drinks.forEach((s, i) => drinkScroll.appendChild(buildCard(s, i * 50)));
+    if (snacks.length > 1) snackScroll.firstElementChild?.classList.add('featured');
+    if (drinks.length > 1) drinkScroll.firstElementChild?.classList.add('featured');
 
     renderVizHalf(document.getElementById('viz-snack-bar'), document.getElementById('viz-snack-legend'), countVibes(snacks));
     renderVizHalf(document.getElementById('viz-drink-bar'), document.getElementById('viz-drink-legend'), countVibes(drinks));
