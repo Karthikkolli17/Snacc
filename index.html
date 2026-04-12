@@ -87,6 +87,10 @@
 .action-remove { width: 100%; padding: .85rem; background: transparent; border: 1px solid rgba(160,40,40,.35); font-family: inherit; font-size: 0.65rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #9a2a2a; cursor: none; transition: background .2s, border-color .2s; }
 .action-remove:hover { background: rgba(160,40,40,.08); border-color: #9a2a2a; }
 .action-remove.confirming { background: #8a1a1a; color: #fff; border-color: #8a1a1a; }
+.nut-edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.nut-edit-field label { font-size: .48rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: .25rem; }
+.nut-edit-field input { width: 100%; padding: .5rem .6rem; border: 1px solid var(--border); background: transparent; font-family: inherit; font-size: .68rem; color: var(--ink); outline: none; box-sizing: border-box; }
+.nut-edit-field input:focus { border-color: var(--ink); }
 .nav-dropdown a.active { color: var(--ink); font-weight: 600; }
 @media (max-width: 700px) {
   .catalog-wrap { padding: 1.5rem 1.25rem 5rem; }
@@ -172,6 +176,12 @@
       <button type="button" class="edit-vibe-btn" data-vibe="mid">Mid</button>
       <button type="button" class="edit-vibe-btn" data-vibe="never">Never Again</button>
     </div>
+    <div id="action-nut-section" style="display:none">
+      <div class="action-divider"></div>
+      <p class="popup-label" style="margin-bottom:.75rem">Nutrition</p>
+      <div class="nut-edit-grid" id="nut-edit-grid"></div>
+      <button class="popup-confirm" id="nut-save-btn" style="width:100%;margin-top:.75rem">Save nutrition</button>
+    </div>
     <div class="action-divider"></div>
     <button class="action-remove" id="action-remove">Remove this log</button>
     <div class="popup-actions" style="margin-top:.75rem;grid-template-columns:1fr">
@@ -208,6 +218,23 @@ if (user) {
     const removeBtn = document.getElementById('action-remove');
     removeBtn.textContent = 'Remove this log';
     removeBtn.classList.remove('confirming');
+
+    const nutSection = document.getElementById('action-nut-section');
+    const nutGrid = document.getElementById('nut-edit-grid');
+    if (row.source === 'Manual') {
+      const isDrink = kind === 'drink';
+      const n = row.nutrition || {};
+      const fields = isDrink
+        ? [['serving','Serving',''],['calories','Calories',''],['sugars','Sugars (g)',''],['carbs','Carbs (g)',''],['sodium','Sodium (mg)',''],['caffeine','Caffeine (mg)',''],['protein','Protein (g)','']]
+        : [['serving','Serving',''],['calories','Calories',''],['fat','Fat (g)',''],['satFat','Sat Fat (g)',''],['sodium','Sodium (mg)',''],['carbs','Carbs (g)',''],['fiber','Fiber (g)',''],['sugars','Sugars (g)',''],['protein','Protein (g)','']];
+      nutGrid.innerHTML = fields.map(([key, label]) =>
+        `<div class="nut-edit-field"><label>${label}</label><input id="ne-${key}" type="${key==='serving'?'text':'number'}" value="${n[key]??''}" placeholder="—"/></div>`
+      ).join('');
+      nutSection.style.display = '';
+    } else {
+      nutSection.style.display = 'none';
+    }
+
     actionBackdrop.classList.add('show');
   }
   function closeAction() { actionBackdrop.classList.remove('show'); activeRow = null; removeConfirming = false; }
@@ -227,6 +254,28 @@ if (user) {
     btn.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
   });
 
+  document.getElementById('nut-save-btn').addEventListener('click', async () => {
+    if (!activeRow) return;
+    const kind = activeRow.kind === 'drink' ? 'drink' : 'snack';
+    const isDrink = kind === 'drink';
+    const keys = isDrink
+      ? ['serving','calories','sugars','carbs','sodium','caffeine','protein']
+      : ['serving','calories','fat','satFat','sodium','carbs','fiber','sugars','protein'];
+    const n = {};
+    keys.forEach(k => {
+      const el = document.getElementById('ne-' + k);
+      if (!el) return;
+      n[k] = k === 'serving' ? (el.value.trim() || null) : (el.value !== '' ? parseFloat(el.value) : null);
+    });
+    const btn = document.getElementById('nut-save-btn');
+    btn.textContent = 'Saving…'; btn.disabled = true;
+    const { error } = await sb.from('ratings').update({ nutrition: n }).eq('id', activeRow.id);
+    btn.textContent = 'Save nutrition'; btn.disabled = false;
+    if (error) { alert('Failed: ' + error.message); return; }
+    closeAction();
+    await render();
+  });
+
   document.getElementById('action-remove').addEventListener('click', async () => {
     if (!activeRow) return;
     if (!removeConfirming) {
@@ -242,7 +291,7 @@ if (user) {
     await render();
   });
 
-  ['action-cancel', 'action-remove'].forEach(id => {
+  ['action-cancel', 'action-remove', 'nut-save-btn'].forEach(id => {
     const el = document.getElementById(id);
     el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
     el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
