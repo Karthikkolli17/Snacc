@@ -215,8 +215,9 @@ if (user) {
     btn.addEventListener('click', async () => {
       if (!activeRow) return;
       const v = btn.dataset.vibe;
-      const { error } = await sb.from('ratings').update({ vibe: v }).eq('id', activeRow.id).eq('user_id', user.id);
-      if (!error) { closeAction(); await render(); }
+      const { error } = await sb.from('ratings').update({ vibe: v }).eq('id', activeRow.id);
+      if (error) { alert('Failed to update: ' + error.message); return; }
+      closeAction(); await render();
     });
     btn.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
     btn.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
