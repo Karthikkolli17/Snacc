@@ -22,13 +22,13 @@
 .rail-stat:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
 .rail-stat-label { font-size: 0.6rem; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
 .rail-stat-num { font-family: 'Bitcount Prop Single', monospace; font-size: 1.15rem; font-weight: 700; color: var(--ink); }
-.warehouse-main { flex: 1; min-width: 0; padding: 0 0 0 1.5rem; }
-.wh-section { margin-bottom: 2rem; }
-.wh-section-title { font-size: 0.6rem; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin-bottom: .75rem; }
+.warehouse-main { flex: 1; min-width: 0; padding: 1.5rem 0 0 2rem; }
+.wh-section { margin-bottom: 2.5rem; }
+.wh-section-title { font-size: 0.6rem; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin-bottom: 1rem; padding-bottom: .6rem; border-bottom: 1px solid var(--border); }
 .wh-scroll { display: flex; gap: 0; overflow-x: auto; overflow-y: hidden; border-left: 1px solid var(--border); border-top: 1px solid var(--border); -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
-.wh-scroll .card { flex: 0 0 200px; max-width: 220px; }
-.wh-viz { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--border); margin-top: .25rem; }
-.wh-viz-half { padding: 1rem 1.1rem 1.25rem; border-right: 1px solid var(--border); min-height: 120px; }
+.wh-scroll .card { flex: 0 0 230px; }
+.wh-viz { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--border); margin-top: 0; }
+.wh-viz-half { padding: 1.25rem 1.5rem 1.5rem; border-right: 1px solid var(--border); }
 .wh-viz-half:last-child { border-right: none; }
 .wh-viz-title { font-size: 0.6rem; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin-bottom: .85rem; }
 .wh-viz-bar { display: flex; height: 10px; width: 100%; overflow: hidden; border: 1px solid var(--border); }
@@ -60,7 +60,7 @@
 .card-skeleton { position: absolute; inset: 0; z-index: 2; background: linear-gradient(90deg, rgba(0,0,0,.03) 0%, rgba(0,0,0,.07) 50%, rgba(0,0,0,.03) 100%); background-size: 200% 100%; animation: shimmer 1.6s infinite; transition: opacity .4s ease; }
 .card-actions { position: absolute; top: .5rem; right: .5rem; display: flex; gap: 4px; z-index: 6; opacity: 0; transition: opacity .2s; }
 .card:hover .card-actions { opacity: 1; }
-.card-edit, .card-delete { width: 24px; height: 24px; background: rgba(0,0,0,.5); border: none; display: flex; align-items: center; justify-content: center; cursor: none; transition: background .2s; padding: 0; color: #fff; font-size: .5rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; font-family: inherit; }
+.card-edit, .card-delete { width: 26px; height: 26px; background: rgba(0,0,0,.5); border: none; display: flex; align-items: center; justify-content: center; cursor: none; transition: background .2s; padding: 0; color: #fff; font-size: .7rem; font-family: inherit; letter-spacing: 0; }
 .card-edit:hover { background: rgba(30,80,120,.9); }
 .card-delete:hover { background: rgba(200,50,50,.85); }
 .card-delete svg { width: 9px; height: 9px; stroke: #fff; fill: none; stroke-width: 2.5; stroke-linecap: round; }
@@ -89,7 +89,7 @@
   .catalog-wrap { padding: 1.5rem 1.25rem 5rem; }
   .warehouse-body { flex-direction: column; }
   .warehouse-rail { width: 100%; border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 1.25rem; margin-bottom: .5rem; }
-  .warehouse-main { padding-left: 0; padding-top: 1rem; }
+  .warehouse-main { padding-left: 0; padding-top: 1.5rem; }
   .wh-viz { grid-template-columns: 1fr; }
   .wh-viz-half { border-right: none; border-bottom: 1px solid var(--border); }
   .wh-viz-half:last-child { border-bottom: none; }
@@ -270,7 +270,7 @@ if (user) {
     }
 
     const actions = document.createElement('div'); actions.className = 'card-actions';
-    const editBtn = document.createElement('button'); editBtn.type = 'button'; editBtn.className = 'card-edit'; editBtn.textContent = 'Edit';
+    const editBtn = document.createElement('button'); editBtn.type = 'button'; editBtn.className = 'card-edit'; editBtn.textContent = '✏️';
     editBtn.addEventListener('click', e => { e.stopPropagation(); openEdit(row); });
     const delBtn = document.createElement('button'); delBtn.className = 'card-delete'; delBtn.setAttribute('aria-label', 'Delete');
     delBtn.innerHTML = '<svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
