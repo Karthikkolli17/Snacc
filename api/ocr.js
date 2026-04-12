@@ -32,30 +32,36 @@ Return only the JSON, no explanation.`;
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      'https://api.groq.com/openai/v1/chat/completions',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        },
         body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: prompt },
-              { inline_data: { mime_type: 'image/jpeg', data: image } },
+          model: 'llama-3.2-11b-vision-preview',
+          temperature: 0,
+          max_tokens: 256,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${image}` } },
             ],
           }],
-          generationConfig: { temperature: 0, maxOutputTokens: 256 },
         }),
       }
     );
 
     if (!response.ok) {
       const err = await response.text();
-      console.error('Gemini API error:', response.status, err);
-      return res.status(502).json({ error: `Gemini ${response.status}: ${err.slice(0, 200)}` });
+      console.error('Groq API error:', response.status, err);
+      return res.status(502).json({ error: `Groq ${response.status}: ${err.slice(0, 200)}` });
     }
 
     const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const text = data.choices?.[0]?.message?.content || '';
     const json = text.match(/\{[\s\S]*\}/)?.[0];
     if (!json) return res.status(502).json({ error: 'No JSON in response' });
 
