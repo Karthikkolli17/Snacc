@@ -22,8 +22,9 @@ export default async function handler(req, res) {
   // Verify ownership
   const check = await fetch(`${base}/ratings?id=eq.${ratingId}&select=user_id`, { headers });
   const rows = await check.json();
-  if (!rows?.length) return res.status(404).json({ error: 'Rating not found' });
-  if (rows[0].user_id !== userId) return res.status(403).json({ error: 'Not your log' });
+  if (!Array.isArray(rows)) return res.status(500).json({ error: 'DB error', detail: rows });
+  if (!rows.length) return res.status(404).json({ error: 'Rating not found', ratingId });
+  if (rows[0].user_id !== userId) return res.status(403).json({ error: 'Not your log', rowUserId: rows[0].user_id, userId });
 
   // Update
   const upd = await fetch(`${base}/ratings?id=eq.${ratingId}`, {
