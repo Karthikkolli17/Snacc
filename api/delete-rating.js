@@ -4,7 +4,7 @@ export default async function handler(req, res) {
   const { ratingId, userId } = req.body;
   if (!ratingId || !userId) return res.status(400).json({ error: 'Missing ratingId or userId' });
 
-  const base = process.env.SUPABASE_URL + '/rest/v1';
+  const base = process.env.SUPABASE_URL.replace(/\/$/, '') + '/rest/v1';
   const headers = {
     'apikey': process.env.SUPABASE_SERVICE_KEY,
     'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,

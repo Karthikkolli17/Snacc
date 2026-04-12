@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   if (nutrition !== undefined) updates.nutrition = nutrition;
   if (!Object.keys(updates).length) return res.status(400).json({ error: 'Nothing to update' });
 
-  const base = process.env.SUPABASE_URL + '/rest/v1';
+  const base = process.env.SUPABASE_URL.replace(/\/$/, '') + '/rest/v1';
   const headers = {
     'apikey': process.env.SUPABASE_SERVICE_KEY,
     'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,
