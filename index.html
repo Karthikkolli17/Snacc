@@ -58,12 +58,10 @@
 .card-no-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 1; }
 .card-no-label p { font-size: .65rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: rgba(255,255,255,.7); text-align: center; line-height: 1.4; }
 .card-skeleton { position: absolute; inset: 0; z-index: 2; background: linear-gradient(90deg, rgba(0,0,0,.03) 0%, rgba(0,0,0,.07) 50%, rgba(0,0,0,.03) 100%); background-size: 200% 100%; animation: shimmer 1.6s infinite; transition: opacity .4s ease; }
-.card-actions { position: absolute; top: .5rem; right: .5rem; display: flex; gap: 4px; z-index: 6; opacity: 0; transition: opacity .2s; }
-.card:hover .card-actions { opacity: 1; }
-.card-edit, .card-delete { width: 26px; height: 26px; background: rgba(0,0,0,.5); border: none; display: flex; align-items: center; justify-content: center; cursor: none; transition: background .2s; padding: 0; color: #fff; font-size: .7rem; font-family: inherit; letter-spacing: 0; }
-.card-edit:hover { background: rgba(30,80,120,.9); }
-.card-delete:hover { background: rgba(200,50,50,.85); }
-.card-delete svg { width: 9px; height: 9px; stroke: #fff; fill: none; stroke-width: 2.5; stroke-linecap: round; }
+.card-menu-btn { position: absolute; top: .5rem; right: .5rem; width: 26px; height: 26px; background: rgba(0,0,0,.5); border: none; display: flex; align-items: center; justify-content: center; cursor: none; transition: background .2s; padding: 0; z-index: 6; opacity: 0; transition: opacity .2s, background .2s; }
+.card:hover .card-menu-btn { opacity: 1; }
+.card-menu-btn:hover { background: rgba(0,0,0,.75); }
+.card-menu-btn svg { width: 12px; height: 12px; fill: #fff; }
 .card-info { padding: .75rem 1rem; border-top: 1px solid var(--border); }
 .card-name { font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: .25rem; }
 .card-meta { display: flex; align-items: center; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
@@ -84,6 +82,10 @@
 .edit-vibe-row { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: .5rem; }
 .edit-vibe-btn { padding: .75rem .5rem; border: 1px solid var(--border); background: transparent; font-family: inherit; font-size: 0.58rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink); cursor: none; transition: border-color .2s, background .2s; }
 .edit-vibe-btn:hover, .edit-vibe-btn.picked { border-color: var(--ink); background: rgba(17,17,17,.06); }
+.action-divider { width: 100%; height: 1px; background: var(--border); margin: 1.5rem 0 1rem; }
+.action-remove { width: 100%; padding: .85rem; background: transparent; border: 1px solid rgba(160,40,40,.35); font-family: inherit; font-size: 0.65rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #9a2a2a; cursor: none; transition: background .2s, border-color .2s; }
+.action-remove:hover { background: rgba(160,40,40,.08); border-color: #9a2a2a; }
+.action-remove.confirming { background: #8a1a1a; color: #fff; border-color: #8a1a1a; }
 .nav-dropdown a.active { color: var(--ink); font-weight: 600; }
 @media (max-width: 700px) {
   .catalog-wrap { padding: 1.5rem 1.25rem 5rem; }
@@ -156,29 +158,20 @@
     </div>
   </div>
 </div>
-<div class="popup-backdrop" id="popup-backdrop">
+<div class="popup-backdrop" id="action-backdrop">
   <div class="popup">
-    <p class="popup-label">Are you sure?</p>
-    <p class="popup-heading">Delete<br>this log?</p>
-    <p class="popup-sub">You are about to remove <span class="popup-name" id="popup-name"></span> from your warehouse. This cannot be undone.</p>
-    <div class="popup-actions">
-      <button class="popup-cancel" id="popup-cancel">Keep it</button>
-      <button class="popup-confirm" id="popup-confirm">Delete it</button>
-    </div>
-  </div>
-</div>
-<div class="popup-backdrop" id="edit-backdrop">
-  <div class="popup">
-    <p class="popup-label">Edit log</p>
-    <p class="popup-heading" id="edit-title">Rating</p>
-    <p class="popup-sub" id="edit-sub"></p>
-    <div class="edit-vibe-row" id="edit-vibe-row">
-      <button type="button" class="edit-vibe-btn" data-vibe="eat" id="edit-eat-btn">Would Eat Again</button>
+    <p class="popup-label" id="action-label">Your log</p>
+    <p class="popup-heading" id="action-name"></p>
+    <p class="popup-sub" id="action-brand"></p>
+    <div class="edit-vibe-row">
+      <button type="button" class="edit-vibe-btn" data-vibe="eat" id="action-eat-btn">Would Eat Again</button>
       <button type="button" class="edit-vibe-btn" data-vibe="mid">Mid</button>
       <button type="button" class="edit-vibe-btn" data-vibe="never">Never Again</button>
     </div>
-    <div class="popup-actions" style="margin-top:1.5rem;grid-template-columns:1fr">
-      <button class="popup-cancel" id="edit-cancel" style="width:100%">Cancel</button>
+    <div class="action-divider"></div>
+    <button class="action-remove" id="action-remove">Remove this log</button>
+    <div class="popup-actions" style="margin-top:.75rem;grid-template-columns:1fr">
+      <button class="popup-cancel" id="action-cancel">Cancel</button>
     </div>
   </div>
 </div>
@@ -195,51 +188,56 @@ if (user) {
   const vibeCls = { eat: 'vibe-eat', mid: 'vibe-mid', never: 'vibe-never' };
   const noImgColors = ['#1a2a4a','#3a1a1a','#1a3a1a','#2a1a3a','#3a2a1a','#1a3a3a'];
 
-  let pendingDelete = null;
-  let pendingEdit = null;
-  const backdrop = document.getElementById('popup-backdrop');
-  const editBackdrop = document.getElementById('edit-backdrop');
-  const popupName = document.getElementById('popup-name');
+  let activeRow = null;
+  let removeConfirming = false;
+  const actionBackdrop = document.getElementById('action-backdrop');
 
-  function openPopup(id, name) { pendingDelete = { id }; popupName.textContent = name; backdrop.classList.add('show'); }
-  function closePopup() { backdrop.classList.remove('show'); pendingDelete = null; }
-
-  function openEdit(row) {
-    pendingEdit = row;
-    document.getElementById('edit-sub').textContent = row.name + (row.brand ? ' · ' + row.brand : '');
+  function openAction(row) {
+    activeRow = row;
+    removeConfirming = false;
     const kind = row.kind === 'drink' ? 'drink' : 'snack';
-    document.getElementById('edit-eat-btn').textContent = vibeLabel[kind].eat;
-    document.querySelectorAll('.edit-vibe-btn').forEach(b => {
-      b.classList.toggle('picked', b.dataset.vibe === row.vibe);
-    });
-    editBackdrop.classList.add('show');
+    document.getElementById('action-label').textContent = kind === 'drink' ? 'Your drink log' : 'Your snack log';
+    document.getElementById('action-name').textContent = row.name;
+    document.getElementById('action-brand').textContent = row.brand || '';
+    document.getElementById('action-eat-btn').textContent = vibeLabel[kind].eat;
+    document.querySelectorAll('.edit-vibe-btn').forEach(b => b.classList.toggle('picked', b.dataset.vibe === row.vibe));
+    const removeBtn = document.getElementById('action-remove');
+    removeBtn.textContent = 'Remove this log';
+    removeBtn.classList.remove('confirming');
+    actionBackdrop.classList.add('show');
   }
-  function closeEdit() { editBackdrop.classList.remove('show'); pendingEdit = null; }
+  function closeAction() { actionBackdrop.classList.remove('show'); activeRow = null; removeConfirming = false; }
 
-  document.getElementById('popup-cancel').addEventListener('click', closePopup);
-  backdrop.addEventListener('click', e => { if (e.target === backdrop) closePopup(); });
-  document.getElementById('popup-confirm').addEventListener('click', async () => {
-    if (!pendingDelete) return;
-    const { id } = pendingDelete;
-    closePopup();
-    await sb.from('ratings').delete().eq('id', id);
-    await render();
-  });
+  actionBackdrop.addEventListener('click', e => { if (e.target === actionBackdrop) closeAction(); });
+  document.getElementById('action-cancel').addEventListener('click', closeAction);
 
-  document.getElementById('edit-cancel').addEventListener('click', closeEdit);
-  editBackdrop.addEventListener('click', e => { if (e.target === editBackdrop) closeEdit(); });
   document.querySelectorAll('.edit-vibe-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!pendingEdit) return;
+      if (!activeRow) return;
       const v = btn.dataset.vibe;
-      const { error } = await sb.from('ratings').update({ vibe: v }).eq('id', pendingEdit.id).eq('user_id', user.id);
-      if (!error) { closeEdit(); await render(); }
+      const { error } = await sb.from('ratings').update({ vibe: v }).eq('id', activeRow.id).eq('user_id', user.id);
+      if (!error) { closeAction(); await render(); }
     });
     btn.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
     btn.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
   });
 
-  ['popup-cancel','popup-confirm'].forEach(id => {
+  document.getElementById('action-remove').addEventListener('click', async () => {
+    if (!activeRow) return;
+    if (!removeConfirming) {
+      removeConfirming = true;
+      const btn = document.getElementById('action-remove');
+      btn.textContent = 'Tap again to confirm';
+      btn.classList.add('confirming');
+      return;
+    }
+    const id = activeRow.id;
+    closeAction();
+    await sb.from('ratings').delete().eq('id', id);
+    await render();
+  });
+
+  ['action-cancel', 'action-remove'].forEach(id => {
     const el = document.getElementById(id);
     el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
     el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
@@ -269,18 +267,12 @@ if (user) {
       imgWrap.appendChild(lbl);
     }
 
-    const actions = document.createElement('div'); actions.className = 'card-actions';
-    const editBtn = document.createElement('button'); editBtn.type = 'button'; editBtn.className = 'card-edit'; editBtn.textContent = '✏️';
-    editBtn.addEventListener('click', e => { e.stopPropagation(); openEdit(row); });
-    const delBtn = document.createElement('button'); delBtn.className = 'card-delete'; delBtn.setAttribute('aria-label', 'Delete');
-    delBtn.innerHTML = '<svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-    delBtn.addEventListener('click', e => { e.stopPropagation(); openPopup(row.id, row.name); });
-    [editBtn, delBtn].forEach(b => {
-      b.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
-      b.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
-    });
-    actions.append(editBtn, delBtn);
-    imgWrap.appendChild(actions);
+    const menuBtn = document.createElement('button'); menuBtn.className = 'card-menu-btn'; menuBtn.setAttribute('aria-label', 'Actions');
+    menuBtn.innerHTML = '<svg viewBox="0 0 16 4"><circle cx="2" cy="2" r="1.5"/><circle cx="8" cy="2" r="1.5"/><circle cx="14" cy="2" r="1.5"/></svg>';
+    menuBtn.addEventListener('click', e => { e.stopPropagation(); openAction(row); });
+    menuBtn.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+    menuBtn.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+    imgWrap.appendChild(menuBtn);
 
     const info = document.createElement('div'); info.className = 'card-info';
     info.innerHTML = '<p class="card-name">' + row.name + '</p><div class="card-meta"><span class="card-brand">' + (row.brand || '') + '</span><span class="vibe-badge ' + cls + '">' + v + '</span></div>';
