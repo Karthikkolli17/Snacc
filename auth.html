@@ -224,13 +224,13 @@ input.addEventListener('input', () => {
       if (token === _authCheckToken) showPausedState();
     }, 5000);
     try {
-      const { data, error } = await sb.from('user_profiles')
-        .select('id, has_passkey, has_pin')
-        .eq('username', val).maybeSingle();
+      const profileRes = await fetch(`/api/user-profile?username=${encodeURIComponent(val)}`);
+      const profileData = await profileRes.json();
       clearTimeout(pauseTimer);
       if (token !== _authCheckToken) return;
-      if (error) throw error;
+      if (!profileRes.ok) throw new Error(profileData.error || 'Profile lookup failed.');
       checking.classList.remove('show');
+      const data = profileData.user;
       if (data) {
         setMode('existing', { username: val, id: data.id, hasPasskey: !!data.has_passkey, hasPin: data.has_pin });
       } else {
