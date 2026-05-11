@@ -46,6 +46,31 @@ function searchScore(product, queryWords, queryText) {
   return score;
 }
 
+function canonicalName(product) {
+  const brand = String(product.display_brand || product.brand || '').toLowerCase();
+  let name = String(product.display_name || product.name || '').toLowerCase();
+  name = name
+    .replace(brand, ' ')
+    .replace(/\b(kellogg'?s|nabisco|original|crackers?|caddies|gripz|hot|spicy|family|size)\b/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+  const words = name.split(/\s+/).filter(Boolean);
+  return `${brand}|${words.slice(0, 3).join(' ') || name}`;
+}
+
+function dedupeVariants(scoredProducts, maxPerGroup = 2) {
+  const counts = new Map();
+  const results = [];
+  for (const item of scoredProducts) {
+    const key = canonicalName(item.product);
+    const count = counts.get(key) || 0;
+    if (count >= maxPerGroup) continue;
+    counts.set(key, count + 1);
+    results.push(item);
+  }
+  return results;
+}
+
 async function fetchProducts() {
   const base = process.env.SUPABASE_URL.replace(/\/$/, '') + '/rest/v1';
   const params = new URLSearchParams({
@@ -78,7 +103,7 @@ export default async function handler(req, res) {
 
   try {
     const rows = await fetchProducts();
-    const results = rows
+    const scored = rows
       .map(hydrateProduct)
       .filter(product => !kind || product.kind === kind)
       .filter(product => product.is_searchable)
@@ -92,6 +117,16 @@ export default async function handler(req, res) {
         return queryWords.every(word => haystack.includes(word));
       })
       .sort((a, b) => b.score - a.score)
+      .reduce((items, item) => {
+        const key = `${item.product.display_brand || item.product.brand}|${item.product.display_name || item.product.name}`.toLowerCase();
+        if (!items.seen.has(key)) {
+          items.seen.add(key);
+          items.list.push(item);
+        }
+        return items;
+      }, { seen: new Set(), list: [] }).list;
+
+    const results = dedupeVariants(scored)
       .slice(0, 12)
       .map(({ product }) => ({
         id: product.id,
