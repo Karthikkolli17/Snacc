@@ -5,6 +5,66 @@ const IMPORT_QUERIES = {
   drink: ['sparkling water', 'soda', 'juice drink', 'energy drink', 'kombucha', 'tea', 'coffee drink'],
 };
 
+const BRAND_QUERIES = {
+  snack: [
+    'Doritos',
+    'Cheetos',
+    'Lays',
+    "Lay's",
+    'Pringles',
+    'Ruffles',
+    'Takis',
+    'Fritos',
+    'Tostitos',
+    'Pop-Tarts',
+    'Oreo',
+    'Chips Ahoy',
+    'Ritz',
+    'Sour Patch Kids',
+    'Skittles',
+    "Reese's",
+    'Snickers',
+    'Goldfish',
+    'Sunchips',
+    'Nabisco',
+  ],
+  drink: [
+    'Coca-Cola',
+    'Coke',
+    'Sprite',
+    'Pepsi',
+    'Dr Pepper',
+    'Mountain Dew',
+    'Gatorade',
+    'Red Bull',
+    'Monster Energy',
+    'Celsius',
+    'Liquid Death',
+    'Poppi',
+    'Olipop',
+    'LaCroix',
+    'Bubly',
+    'Canada Dry',
+    'Arizona',
+    'Snapple',
+    'Starbucks',
+    'Dunkin',
+  ],
+};
+
+const BRAND_ALIASES = {
+  snack: [
+    'doritos', 'cheetos', 'lays', "lay's", 'pringles', 'ruffles', 'takis', 'fritos',
+    'tostitos', 'pop-tarts', 'pop tarts', 'oreo', 'chips ahoy', 'ritz', 'sour patch',
+    'skittles', "reese's", 'reeses', 'snickers', 'goldfish', 'sunchips', 'sun chips', 'nabisco',
+  ],
+  drink: [
+    'coca-cola', 'coca cola', 'coke', 'sprite', 'pepsi', 'dr pepper', 'mountain dew',
+    'gatorade', 'red bull', 'monster energy', 'celsius', 'liquid death', 'poppi', 'olipop',
+    'lacroix', 'la croix', 'bubly', 'canada dry', 'arizona', 'snapple', 'starbucks', 'dunkin',
+  ],
+};
+
 const ALLOWED_CATEGORIES = {
   snack: [
     'biscuits/cookies',
@@ -111,7 +171,14 @@ function matchesAny(text, terms) {
   return terms.some(term => matchesTerm(text, term));
 }
 
-function isAllowedUsdaProduct(food, kind) {
+function isAllowedBrandProduct(food, kind) {
+  const text = [food.description, food.brandOwner, food.brandName, food.subbrandName]
+    .join(' ')
+    .toLowerCase();
+  return BRAND_ALIASES[kind].some(brand => text.includes(brand));
+}
+
+function isAllowedUsdaProduct(food, kind, mode) {
   const name = cleanName(food.description);
   const category = String(food.foodCategory || '').toLowerCase();
   const text = [name, food.brandOwner, food.brandName, category].join(' ').toLowerCase();
@@ -122,13 +189,14 @@ function isAllowedUsdaProduct(food, kind) {
 
   const categoryAllowed = ALLOWED_CATEGORIES[kind].includes(category);
   const termAllowed = matchesAny(text, REQUIRED_TERMS[kind]);
+  const brandAllowed = mode === 'brands' ? isAllowedBrandProduct(food, kind) : true;
 
   if (kind === 'snack') {
     const looksLikeDrink = matchesAny(text, REQUIRED_TERMS.drink);
-    return categoryAllowed && termAllowed && !looksLikeDrink;
+    return categoryAllowed && termAllowed && brandAllowed && !looksLikeDrink;
   }
 
-  return categoryAllowed && termAllowed;
+  return categoryAllowed && termAllowed && brandAllowed;
 }
 
 function nutrientValue(food, names) {
@@ -169,11 +237,14 @@ function normalizeUsdaProduct(food, kind) {
   };
 }
 
-async function fetchUsda(kind, limit) {
+async function fetchUsda(kind, limit, mode) {
   if (!process.env.USDA_API_KEY) throw new Error('Missing USDA_API_KEY');
 
-  const queries = IMPORT_QUERIES[kind] || IMPORT_QUERIES.snack;
-  const perQuery = Math.min(200, Math.max(25, Math.ceil(limit / queries.length) * 4));
+  const querySet = mode === 'brands' ? BRAND_QUERIES : IMPORT_QUERIES;
+  const queries = querySet[kind] || querySet.snack;
+  const perQuery = mode === 'brands'
+    ? Math.min(50, Math.max(12, Math.ceil(limit / queries.length) * 3))
+    : Math.min(200, Math.max(25, Math.ceil(limit / queries.length) * 4));
   const batches = await Promise.allSettled(queries.map(async query => {
     const url = new URL('https://api.nal.usda.gov/fdc/v1/foods/search');
     url.searchParams.set('query', query);
@@ -192,7 +263,7 @@ async function fetchUsda(kind, limit) {
   const seen = new Set();
   const fetched = batches.flatMap(batch => batch.status === 'fulfilled' ? batch.value : []);
   const matched = fetched
-    .filter(food => isAllowedUsdaProduct(food, kind))
+    .filter(food => isAllowedUsdaProduct(food, kind, mode))
     .map(food => normalizeUsdaProduct(food, kind))
     .filter(Boolean)
     .filter(product => {
@@ -238,11 +309,12 @@ export default async function handler(req, res) {
 
   const kind = req.body?.kind === 'drink' ? 'drink' : 'snack';
   const limit = Math.min(1000, Math.max(10, Number(req.body?.limit || 100)));
+  const mode = req.body?.mode === 'brands' ? 'brands' : 'broad';
 
   try {
-    const { products, fetched, accepted, rejected } = await fetchUsda(kind, limit);
+    const { products, fetched, accepted, rejected } = await fetchUsda(kind, limit, mode);
     const imported = await upsertProducts(products);
-    res.status(200).json({ ok: true, source: 'usda', kind, fetched, accepted, rejected, imported });
+    res.status(200).json({ ok: true, source: 'usda', mode, kind, fetched, accepted, rejected, imported });
   } catch (e) {
     res.status(500).json({ error: 'Product import failed', detail: e.message });
   }
