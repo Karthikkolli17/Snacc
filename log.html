@@ -379,7 +379,7 @@ if (user) {
 
   async function searchOFF(q) {
     const enc = encodeURIComponent(q);
-    const data = await _fetchWithTimeout(`/api/search?q=${enc}&_=${Date.now()}`)
+    const data = await _fetchWithTimeout(`/api/search?q=${enc}&kind=${encodeURIComponent(KIND)}&_=${Date.now()}`)
       .then(r => r.ok ? r.json() : null).catch(() => null);
     if (!data) return null;
     return data.results || [];
@@ -659,7 +659,7 @@ if (user) {
       name:selectedProduct.name, brand:selectedProduct.brand||'',
       vibe:selectedVibe, image:selectedProduct.image||null,
       source:selectedProduct.source||'',
-      barcode: selectedProduct.source==='Open Food Facts' ? selectedProduct.id : null,
+      barcode: selectedProduct.barcode || (selectedProduct.source === 'Open Food Facts' ? selectedProduct.id : null),
       nutrition: selectedProduct.nutrition||null,
       kind: KIND,
       country: selectedCountry || null
