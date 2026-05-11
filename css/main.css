@@ -40,9 +40,6 @@ nav { display: flex; justify-content: space-between; align-items: center; paddin
 .money-note { font-size: .48rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); line-height: 1.5; margin-top: .55rem; }
 .money-rail.success-money { max-width: 420px; border-top: none; padding-top: 0; margin-top: 1.2rem; }
 .money-rail.success-money .money-links { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.sponsor-link { border: 1px solid var(--border); padding: .45rem .65rem; }
-.sponsor-link::after { display: none; }
-
 @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes revealUp { to { transform: translateY(0); } }

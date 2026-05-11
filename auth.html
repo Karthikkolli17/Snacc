@@ -47,11 +47,6 @@
 /* Backup prompt */
 .backup-msg { font-size: .72rem; line-height: 1.65; color: var(--ink); margin-top: 1.5rem; margin-bottom: .25rem; }
 .backup-sub { font-size: .55rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: .25rem; }
-.auth-money-note { display: none; border-top: 1px solid var(--border); margin-top: 1.75rem; padding-top: 1.25rem; }
-.auth-money-note.show { display: block; }
-.auth-money-note p { font-size: .62rem; letter-spacing: .14em; line-height: 1.7; text-transform: uppercase; color: var(--muted); margin-bottom: .85rem; }
-.auth-money-note a { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 1rem; background: var(--ink); color: var(--bg); text-decoration: none; font-size: .58rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; cursor: none; transition: transform .24s cubic-bezier(.34,1.56,.64,1); }
-.auth-money-note a:hover { transform: scale(1.04); }
 @media (max-width: 700px) { .auth-input { font-size: 1.1rem; } }
 </style>
 <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
@@ -62,9 +57,7 @@
 <div id="cur-ring"></div>
 <nav>
   <a href="auth.html" class="logo">Snacc.</a>
-  <ul class="nav-links">
-    <li><a href="sponsor.html" class="sponsor-link">Brands</a></li>
-  </ul>
+  <ul class="nav-links"></ul>
 </nav>
 <div class="auth-page">
   <h1 class="auth-heading">Who are<br>you?</h1>
@@ -76,11 +69,6 @@
   </div>
   <p class="auth-status" id="auth-status"></p>
   <p class="auth-error" id="auth-error"></p>
-  <div class="auth-money-note" id="auth-money-note">
-    <p>Snacc is restocking. Brands can still book aisle placement.</p>
-    <a id="auth-sponsor-link" href="sponsor.html">Sponsor Snacc</a>
-  </div>
-
   <!-- Passkey + PIN -->
   <div id="method-section" style="display:none">
     <button class="auth-btn" id="passkey-btn">
@@ -142,7 +130,6 @@ const pinSec      = document.getElementById('pin-section');
 const pinLabelEl  = document.getElementById('pin-label');
 const passkeyLink = document.getElementById('passkey-link');
 const backupSec   = document.getElementById('backup-section');
-const moneyNote   = document.getElementById('auth-money-note');
 
 let _mode     = 'empty';   // empty | new | existing
 let _userData = null;
@@ -165,7 +152,6 @@ function showPausedState() {
   statusEl.textContent = 'Snacc is restocking right now.';
   statusEl.classList.add('show');
   errEl.textContent = 'Login is temporarily unavailable while the database is paused.';
-  moneyNote.classList.add('show');
 }
 
 function updateDots() {
@@ -245,7 +231,6 @@ input.addEventListener('input', () => {
       if (token !== _authCheckToken) return;
       if (error) throw error;
       checking.classList.remove('show');
-      moneyNote.classList.remove('show');
       if (data) {
         setMode('existing', { username: val, id: data.id, hasPasskey: !!data.has_passkey, hasPin: data.has_pin });
       } else {
@@ -344,12 +329,7 @@ const grid = document.getElementById('pin-grid');
 });
 
 // Hover states for nav elements
-document.getElementById('auth-sponsor-link').href = typeof snaccSponsorHref === 'function' ? snaccSponsorHref() : 'sponsor.html';
-document.getElementById('auth-sponsor-link').addEventListener('click', () => {
-  if (typeof snaccTrackMoney === 'function') snaccTrackMoney('sponsor_lead_click', { placement: 'auth_paused' });
-});
-
-document.querySelectorAll('.auth-btn, .auth-btn-secondary, .logo, .auth-alt-link, .nav-links a, .auth-money-note a').forEach(el => {
+document.querySelectorAll('.auth-btn, .auth-btn-secondary, .logo, .auth-alt-link, .nav-links a').forEach(el => {
   el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
   el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
 });
