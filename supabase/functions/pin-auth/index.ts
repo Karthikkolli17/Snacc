@@ -16,6 +16,16 @@ function json(data: unknown, status = 200) {
   });
 }
 
+function normalizeUsername(username: unknown): string | null {
+  if (typeof username !== "string") return null;
+  const lowerUser = username.trim().toLowerCase();
+  return /^[a-z0-9_]{1,20}$/.test(lowerUser) ? lowerUser : null;
+}
+
+function isValidPin(pin: unknown): pin is string {
+  return typeof pin === "string" && /^\d{4}$/.test(pin);
+}
+
 function b64url(bytes: Uint8Array): string {
   return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
@@ -78,9 +88,11 @@ Deno.serve(async (req) => {
   }
 
   const { action, username, pin, userId } = body;
-  if (!action || !username || !pin) return json({ error: "Missing fields" }, 400);
+  if (!action || username === undefined || pin === undefined) return json({ error: "Missing fields" }, 400);
 
-  const lowerUser = username.toLowerCase();
+  const lowerUser = normalizeUsername(username);
+  if (!lowerUser) return json({ error: "Letters, numbers, underscores only. Max 20 characters." }, 400);
+  if (!isValidPin(pin)) return json({ error: "PIN must be exactly 4 digits." }, 400);
 
   if (action === "register") {
     const { data: existing } = await sb.from("users").select("id").eq("username", lowerUser).maybeSingle();
