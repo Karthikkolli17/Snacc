@@ -31,6 +31,18 @@ nav { display: flex; justify-content: space-between; align-items: center; paddin
 .nav-dropdown a:hover, .nav-dropdown button:hover { background: rgba(17,17,17,.05); }
 .nav-dropdown button { color: var(--muted); }
 
+.money-rail { border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 1rem; }
+.money-label { font-size: .55rem; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin-bottom: .7rem; }
+.money-links { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; border: 1px solid var(--border); }
+.money-link { display: flex; align-items: center; justify-content: center; min-height: 40px; color: var(--ink); text-decoration: none; font-size: .58rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; border-right: 1px solid var(--border); cursor: none; transition: background .16s, color .16s; }
+.money-link:last-child { border-right: none; }
+.money-link:hover { background: var(--ink); color: var(--bg); }
+.money-note { font-size: .48rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); line-height: 1.5; margin-top: .55rem; }
+.money-rail.success-money { max-width: 420px; border-top: none; padding-top: 0; margin-top: 1.2rem; }
+.money-rail.success-money .money-links { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sponsor-link { border: 1px solid var(--border); padding: .45rem .65rem; }
+.sponsor-link::after { display: none; }
+
 @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes revealUp { to { transform: translateY(0); } }
@@ -104,4 +116,8 @@ nav { display: flex; justify-content: space-between; align-items: center; paddin
   #cur-dot, #cur-ring { display: none; }
   nav { padding: 1.25rem; }
   .nav-links { gap: .9rem 1.1rem; }
+  .money-link { cursor: pointer; }
+  .money-links { grid-template-columns: 1fr; }
+  .money-link { border-right: none; border-bottom: 1px solid var(--border); }
+  .money-link:last-child { border-bottom: none; }
 }

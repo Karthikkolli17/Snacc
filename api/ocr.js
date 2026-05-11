@@ -1,8 +1,16 @@
+import { requireSession } from './_session.js';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  const user = requireSession(req, res);
+  if (!user) return;
+
   const { image, kind } = req.body;
   if (!image) return res.status(400).json({ error: 'Missing image' });
+  if (typeof image !== 'string' || image.length > 3_000_000) {
+    return res.status(413).json({ error: 'Image payload too large' });
+  }
 
   const isDrink = kind === 'drink';
   const prompt = isDrink

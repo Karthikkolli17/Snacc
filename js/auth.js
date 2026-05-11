@@ -2,6 +2,15 @@ function getUser() {
   try { return JSON.parse(localStorage.getItem('snacc_user')); } catch { return null; }
 }
 
+function getSessionToken() {
+  return getUser()?.sessionToken || '';
+}
+
+function authHeaders(extra = {}) {
+  const token = getSessionToken();
+  return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+}
+
 function requireAuth() {
   const user = getUser();
   if (!user) { window.location.replace('auth.html'); return null; }
@@ -87,7 +96,7 @@ async function _pinRequest(body) {
 
 async function registerPin(username, pin) {
   const data = await _pinRequest({ action: 'register', username, pin });
-  const user = { id: data.id, username: data.username };
+  const user = { id: data.id, username: data.username, sessionToken: data.session_token };
   localStorage.setItem('snacc_user', JSON.stringify(user));
   return user;
 }
@@ -98,7 +107,7 @@ async function addPinToAccount(userId, username, pin) {
 
 async function loginPin(username, pin) {
   const data = await _pinRequest({ action: 'login', username, pin });
-  const user = { id: data.id, username: data.username };
+  const user = { id: data.id, username: data.username, sessionToken: data.session_token };
   localStorage.setItem('snacc_user', JSON.stringify(user));
   return user;
 }

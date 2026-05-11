@@ -2,6 +2,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const RATE_LIMIT = 5;
 const LOCKOUT_MINUTES = 15;
+const SESSION_DAYS = 30;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,6 +14,33 @@ function json(data: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+function b64url(bytes: Uint8Array): string {
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function b64urlText(text: string): string {
+  return b64url(new TextEncoder().encode(text));
+}
+
+async function signSession(id: string, username: string): Promise<string> {
+  const secret = Deno.env.get("APP_SESSION_SECRET");
+  if (!secret) throw new Error("Missing APP_SESSION_SECRET");
+  const payload = b64urlText(JSON.stringify({
+    id,
+    username,
+    exp: Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000,
+  }));
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
+  return `${payload}.${b64url(new Uint8Array(sig))}`;
 }
 
 async function hashPin(pin: string): Promise<string> {
@@ -61,7 +89,7 @@ Deno.serve(async (req) => {
     const newId = crypto.randomUUID();
     const { error } = await sb.from("users").insert({ id: newId, username: lowerUser, pin_hash: hash });
     if (error) return json({ error: error.message }, 500);
-    return json({ id: newId, username: lowerUser });
+    return json({ id: newId, username: lowerUser, session_token: await signSession(newId, lowerUser) });
   }
 
   if (action === "add-pin") {
@@ -100,7 +128,7 @@ Deno.serve(async (req) => {
     }
 
     await sb.from("users").update({ pin_attempts: 0, pin_locked_until: null }).eq("id", user.id);
-    return json({ id: user.id, username: user.username });
+    return json({ id: user.id, username: user.username, session_token: await signSession(user.id, user.username) });
   }
 
   return json({ error: "Unknown action" }, 400);

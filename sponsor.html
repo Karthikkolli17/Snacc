@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brands · Snacc.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bitcount+Prop+Single:wght@100..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/main.css">
+<script src="js/monetization.js"></script>
+<style>
+.sponsor-page { max-width: 1100px; margin: 0 auto; padding: 3rem 3.5rem 6rem; }
+.sponsor-hero { display: grid; grid-template-columns: 1.15fr .85fr; gap: 3rem; align-items: end; border-bottom: 1px solid var(--border); padding-bottom: 3rem; }
+.sponsor-kicker { font-size: .65rem; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); margin-bottom: .8rem; }
+.sponsor-title { font-family: 'Bitcount Prop Single', monospace; font-size: clamp(3rem, 8vw, 6rem); font-weight: 700; line-height: .9; letter-spacing: -.02em; margin-bottom: 1.2rem; }
+.sponsor-copy { max-width: 620px; font-size: 1rem; line-height: 1.65; color: rgba(17,17,17,.68); }
+.sponsor-actions { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; margin-top: 2rem; }
+.sponsor-cta { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 1.35rem; background: var(--ink); color: var(--bg); text-decoration: none; font-size: .62rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; cursor: none; transition: transform .24s cubic-bezier(.34,1.56,.64,1); }
+.sponsor-cta:hover { transform: scale(1.04); }
+.sponsor-cta.secondary { background: transparent; color: var(--ink); border: 1px solid var(--border); }
+.sponsor-panel { border: 1px solid var(--border); padding: 1.4rem; }
+.sponsor-panel-title { font-size: .58rem; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin-bottom: 1.2rem; }
+.sponsor-metric { display: flex; justify-content: space-between; gap: 1rem; padding: .85rem 0; border-bottom: 1px solid var(--border); }
+.sponsor-metric:last-child { border-bottom: none; padding-bottom: 0; }
+.sponsor-metric span { font-size: .6rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.sponsor-metric strong { font-family: 'Bitcount Prop Single', monospace; font-size: 1.4rem; line-height: 1; }
+.sponsor-grid { display: grid; grid-template-columns: repeat(3, 1fr); border-left: 1px solid var(--border); border-top: 1px solid var(--border); margin-top: 3rem; }
+.sponsor-card { min-height: 260px; padding: 1.5rem; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); display: flex; flex-direction: column; justify-content: space-between; background: var(--card-bg); }
+.sponsor-card h2 { font-family: 'Bitcount Prop Single', monospace; font-size: 2rem; line-height: .95; letter-spacing: -.01em; margin-bottom: 1rem; }
+.sponsor-card p { font-size: .72rem; line-height: 1.7; color: rgba(17,17,17,.6); }
+.sponsor-price { font-size: .58rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-top: 1.5rem; }
+.sponsor-price strong { display: block; font-family: 'Bitcount Prop Single', monospace; font-size: 2rem; color: var(--ink); letter-spacing: 0; margin-top: .25rem; }
+.sponsor-strip { margin-top: 3rem; padding: 1.5rem 0 0; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 2rem; }
+.sponsor-strip p { font-size: .62rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); line-height: 1.7; }
+@media (max-width: 820px) {
+  .sponsor-page { padding: 2rem 1.25rem 5rem; }
+  .sponsor-hero, .sponsor-grid { grid-template-columns: 1fr; }
+  .sponsor-strip { align-items: flex-start; flex-direction: column; }
+}
+</style>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+<div id="cur-dot"></div>
+<div id="cur-ring"></div>
+<nav>
+  <a href="feed.html" class="logo">Snacc.</a>
+  <ul class="nav-links">
+    <li><a href="feed.html">Snaccs</a></li>
+    <li><a href="drink.html">Drinks</a></li>
+    <li><a href="log.html">Log an Item</a></li>
+    <li><a href="sponsor.html" class="active sponsor-link">Brands</a></li>
+  </ul>
+</nav>
+<main class="sponsor-page">
+  <section class="sponsor-hero">
+    <div>
+      <p class="sponsor-kicker">Sponsor the aisle</p>
+      <h1 class="sponsor-title">Get tasted.</h1>
+      <p class="sponsor-copy">Snacc puts new snacks and drinks in front of people who already log, rate, and compare what they try. Brands can buy tasteful placement without interrupting the product.</p>
+      <div class="sponsor-actions">
+        <a class="sponsor-cta" id="sponsor-primary" href="#">Book a placement</a>
+        <a class="sponsor-cta secondary" href="feed.html">See the aisle</a>
+      </div>
+    </div>
+    <aside class="sponsor-panel">
+      <p class="sponsor-panel-title">Starter package</p>
+      <div class="sponsor-metric"><span>Placement</span><strong>7d</strong></div>
+      <div class="sponsor-metric"><span>Creative</span><strong>1</strong></div>
+      <div class="sponsor-metric"><span>Price</span><strong>$350</strong></div>
+    </aside>
+  </section>
+
+  <section class="sponsor-grid">
+    <div class="sponsor-card">
+      <div>
+        <h2>Aisle Feature</h2>
+        <p>A highlighted snack or drink placement on category pages with a direct shopping link.</p>
+      </div>
+      <p class="sponsor-price">From<strong>$350</strong></p>
+    </div>
+    <div class="sponsor-card">
+      <div>
+        <h2>Launch Drop</h2>
+        <p>A one-week launch slot for new flavors, limited releases, and regional items.</p>
+      </div>
+      <p class="sponsor-price">From<strong>$750</strong></p>
+    </div>
+    <div class="sponsor-card">
+      <div>
+        <h2>Retail Intent</h2>
+        <p>Affiliate-friendly buy links from product detail pages and post-log moments.</p>
+      </div>
+      <p class="sponsor-price">Live<strong>Now</strong></p>
+    </div>
+  </section>
+
+  <section class="sponsor-strip">
+    <p>Available inventory: weekly brand placement, launch drops, and affiliate commerce links.</p>
+    <a class="sponsor-cta" id="sponsor-secondary" href="#">Ask for rates</a>
+  </section>
+</main>
+<script>
+const sponsorHref = snaccSponsorHref();
+document.getElementById('sponsor-primary').href = sponsorHref;
+document.getElementById('sponsor-secondary').href = sponsorHref;
+document.querySelectorAll('a, button').forEach(el => {
+  el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+  el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+});
+document.querySelectorAll('#sponsor-primary, #sponsor-secondary').forEach(el => {
+  el.addEventListener('click', () => snaccTrackMoney('sponsor_lead_click', { placement: el.id }));
+});
+</script>
+<script src="js/cursor.js"></script>
+</body>
+</html>

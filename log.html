@@ -12,6 +12,8 @@
 <script src="js/supabase.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/country.js"></script>
+<script src="js/safe-dom.js"></script>
+<script src="js/monetization.js"></script>
 <style>
 .page { max-width: 860px; margin: 0 auto; padding: 4rem 2.5rem 6rem; }
 .steps { display: flex; align-items: center; gap: .6rem; margin-bottom: 3rem; }
@@ -125,6 +127,7 @@
     <li><a href="feed.html">Snaccs</a></li>
     <li><a href="drink.html">Drinks</a></li>
     <li><a href="#" class="active">Log an Item</a></li>
+    <li><a href="sponsor.html" class="sponsor-link">Brands</a></li>
     <li class="nav-profile">
       <button class="nav-username" id="nav-username"></button>
       <div class="nav-dropdown" id="nav-dropdown">
@@ -252,6 +255,7 @@
         <a href="index.html">View Warehouse →</a>
       </div>
     </div>
+    <div id="success-money"></div>
   </div>
 </div>
 <script>
@@ -356,6 +360,7 @@ if (user) {
     document.getElementById('rating-section').classList.remove('visible');
     document.getElementById('save-btn').classList.remove('ready');
     document.getElementById('success-msg').classList.remove('show');
+    document.getElementById('success-money').innerHTML = '';
     document.querySelectorAll('.vibe-option').forEach(b=>b.classList.remove('picked'));
     setStep(1);
   }
@@ -408,7 +413,7 @@ if (user) {
     const bg=document.createElement('div'); bg.className='result-card-bg';
     const skel=document.createElement('div'); skel.className='result-skel';
     const label=document.createElement('div'); label.className='result-card-label';
-    label.innerHTML=`<span>${product.brand}</span><p>${product.name}</p><span class="src-badge${product._snacc?' snacc':''}">${product.source}</span>`;
+    label.innerHTML=`<span>${snaccEscapeHtml(product.brand)}</span><p>${snaccEscapeHtml(product.name)}</p><span class="src-badge${product._snacc?' snacc':''}">${snaccEscapeHtml(product.source)}</span>`;
     card.append(bg,skel,label);
     if (product.image) {
       const img=document.createElement('img');
@@ -443,6 +448,7 @@ if (user) {
     document.querySelectorAll('.vibe-option').forEach(b=>b.classList.remove('picked'));
     document.getElementById('save-btn').classList.remove('ready');
     document.getElementById('success-msg').classList.remove('show');
+    document.getElementById('success-money').innerHTML = '';
     document.getElementById('preview-brand').textContent=product.brand;
     document.getElementById('preview-name').textContent=product.name;
     const pImg=document.getElementById('preview-img');
@@ -462,6 +468,7 @@ if (user) {
     document.getElementById('rating-section').classList.remove('visible');
     document.getElementById('save-btn').classList.remove('ready');
     document.getElementById('success-msg').classList.remove('show');
+    document.getElementById('success-money').innerHTML = '';
     document.getElementById('manual-form').classList.remove('show');
     const resultsEl=document.getElementById('results');
     resultsEl.innerHTML=''; resultsEl.classList.remove('visible');
@@ -555,7 +562,7 @@ if (user) {
 
       const res = await fetch('/api/ocr', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ image: base64, kind: KIND }),
       });
       if (!res.ok) {
@@ -646,22 +653,33 @@ if (user) {
     if (!selectedProduct||!selectedVibe) return;
     const btn=document.getElementById('save-btn');
     btn.classList.add('saving');
-    const {error}=await sb.from('ratings').insert({
+    const res = await fetch('/api/create-rating', {
+      method: 'POST',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({
       name:selectedProduct.name, brand:selectedProduct.brand||'',
       vibe:selectedVibe, image:selectedProduct.image||null,
-      source:selectedProduct.source||'', logged_at:new Date().toISOString(),
-      user_id:user.id,
+      source:selectedProduct.source||'',
       barcode: selectedProduct.source==='Open Food Facts' ? selectedProduct.id : null,
       nutrition: selectedProduct.nutrition||null,
       kind: KIND,
       country: selectedCountry || null
+      }),
     });
+    const error = res.ok ? null : await res.json().catch(() => ({ error: 'Failed to save' }));
     btn.classList.remove('saving');
     if (error) {
-      alert('Failed to save: ' + error.message);
+      alert('Failed to save: ' + (error.error || error.message));
     } else {
       btn.classList.remove('ready');
       document.getElementById('success-msg').classList.add('show');
+      const moneyEl = document.getElementById('success-money');
+      moneyEl.innerHTML = '';
+      if (typeof snaccBuildBuyRail === 'function') {
+        const rail = snaccBuildBuyRail({ ...selectedProduct, kind: KIND }, 'post_log');
+        rail.classList.add('success-money');
+        moneyEl.appendChild(rail);
+      }
       document.querySelectorAll('.vibe-option').forEach(b=>b.classList.remove('picked'));
       selectedProduct=null; selectedVibe=null; setStep(1);
     }

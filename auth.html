@@ -11,6 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/monetization.js"></script>
 <style>
 .auth-page { display: flex; flex-direction: column; justify-content: center; min-height: calc(100vh - 73px); padding: 3rem 2.5rem; max-width: 480px; margin: 0 auto; }
 .auth-heading { font-family: 'Bitcount Prop Single', monospace; font-size: clamp(2.8rem, 8vw, 4.8rem); font-weight: 700; line-height: 1.1; letter-spacing: -.02em; margin-bottom: 2.5rem; padding-top: 0.1em; -webkit-font-smoothing: antialiased; }
@@ -46,6 +47,11 @@
 /* Backup prompt */
 .backup-msg { font-size: .72rem; line-height: 1.65; color: var(--ink); margin-top: 1.5rem; margin-bottom: .25rem; }
 .backup-sub { font-size: .55rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: .25rem; }
+.auth-money-note { display: none; border-top: 1px solid var(--border); margin-top: 1.75rem; padding-top: 1.25rem; }
+.auth-money-note.show { display: block; }
+.auth-money-note p { font-size: .62rem; letter-spacing: .14em; line-height: 1.7; text-transform: uppercase; color: var(--muted); margin-bottom: .85rem; }
+.auth-money-note a { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 1rem; background: var(--ink); color: var(--bg); text-decoration: none; font-size: .58rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; cursor: none; transition: transform .24s cubic-bezier(.34,1.56,.64,1); }
+.auth-money-note a:hover { transform: scale(1.04); }
 @media (max-width: 700px) { .auth-input { font-size: 1.1rem; } }
 </style>
 <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
@@ -56,6 +62,9 @@
 <div id="cur-ring"></div>
 <nav>
   <a href="auth.html" class="logo">Snacc.</a>
+  <ul class="nav-links">
+    <li><a href="sponsor.html" class="sponsor-link">Brands</a></li>
+  </ul>
 </nav>
 <div class="auth-page">
   <h1 class="auth-heading">Who are<br>you?</h1>
@@ -67,6 +76,10 @@
   </div>
   <p class="auth-status" id="auth-status"></p>
   <p class="auth-error" id="auth-error"></p>
+  <div class="auth-money-note" id="auth-money-note">
+    <p>Snacc is restocking. Brands can still book aisle placement.</p>
+    <a id="auth-sponsor-link" href="sponsor.html">Sponsor Snacc</a>
+  </div>
 
   <!-- Passkey + PIN -->
   <div id="method-section" style="display:none">
@@ -129,6 +142,7 @@ const pinSec      = document.getElementById('pin-section');
 const pinLabelEl  = document.getElementById('pin-label');
 const passkeyLink = document.getElementById('passkey-link');
 const backupSec   = document.getElementById('backup-section');
+const moneyNote   = document.getElementById('auth-money-note');
 
 let _mode     = 'empty';   // empty | new | existing
 let _userData = null;
@@ -137,11 +151,21 @@ let _pinFirst = '';
 let _pinVal   = '';
 let _newUserId = null;
 let _debounce  = null;
+let _authCheckToken = 0;
 
 function showSection(name) {
   methodSec.style.display = name === 'method' ? 'block' : 'none';
   pinSec.style.display    = name === 'pin'    ? 'block' : 'none';
   backupSec.style.display = name === 'backup' ? 'block' : 'none';
+}
+
+function showPausedState() {
+  checking.classList.remove('show');
+  showSection(null);
+  statusEl.textContent = 'Snacc is restocking right now.';
+  statusEl.classList.add('show');
+  errEl.textContent = 'Login is temporarily unavailable while the database is paused.';
+  moneyNote.classList.add('show');
 }
 
 function updateDots() {
@@ -163,10 +187,7 @@ function openPin(mode) {
   };
   pinLabelEl.textContent = labels[mode] || '';
 
-  const showBack = mode === 'login' || mode === 'setup';
-  passkeyLink.style.display = showBack && _userData?.hasPasskey !== false ? 'block' : 'none';
-  if (mode === 'login') passkeyLink.textContent = `Use ${authLabel} instead`;
-  if (mode === 'setup') passkeyLink.textContent = `Use ${authLabel} instead`;
+  passkeyLink.style.display = 'none';
 }
 
 function setMode(mode, userData) {
@@ -179,21 +200,19 @@ function setMode(mode, userData) {
 
   if (mode === 'new') {
     statusEl.textContent = `New here — joining as @${username}`; statusEl.classList.add('show');
-    passkeyLbl.textContent = `Get started with ${authLabel}`;
+    passkeyLbl.textContent = 'Set a PIN to continue';
     passkeyBtn.disabled = false;
-    document.getElementById('pin-link-label').textContent = 'Set a PIN instead';
-    pinLink.style.display = 'flex';
+    pinLink.style.display = 'none';
     showSection('method');
     return;
   }
 
   if (mode === 'existing') {
     statusEl.textContent = `Welcome back, @${username}`; statusEl.classList.add('show');
-    if (hasPin && !hasPasskey) { openPin('login'); return; }
-    passkeyLbl.textContent = `Sign in with ${authLabel}`;
+    if (hasPin) { openPin('login'); return; }
+    passkeyLbl.textContent = `${authLabel} upgrade needed`;
     passkeyBtn.disabled = false;
-    document.getElementById('pin-link-label').textContent = hasPin ? 'Use PIN instead' : 'Set up a PIN';
-    pinLink.style.display = 'flex';
+    pinLink.style.display = 'none';
     showSection('method');
   }
 }
@@ -214,47 +233,36 @@ input.addEventListener('input', () => {
 
   checking.classList.add('show');
   _debounce = setTimeout(async () => {
-    const { data } = await sb.from('user_profiles')
-      .select('id, credential_id, has_pin')
-      .eq('username', val).maybeSingle();
-    checking.classList.remove('show');
-    if (data) {
-      setMode('existing', { username: val, id: data.id, hasPasskey: !!data.credential_id, hasPin: data.has_pin });
-    } else {
-      setMode('new', { username: val, hasPasskey: true, hasPin: false });
+    const token = ++_authCheckToken;
+    const pauseTimer = setTimeout(() => {
+      if (token === _authCheckToken) showPausedState();
+    }, 5000);
+    try {
+      const { data, error } = await sb.from('user_profiles')
+        .select('id, has_passkey, has_pin')
+        .eq('username', val).maybeSingle();
+      clearTimeout(pauseTimer);
+      if (token !== _authCheckToken) return;
+      if (error) throw error;
+      checking.classList.remove('show');
+      moneyNote.classList.remove('show');
+      if (data) {
+        setMode('existing', { username: val, id: data.id, hasPasskey: !!data.has_passkey, hasPin: data.has_pin });
+      } else {
+        setMode('new', { username: val, hasPasskey: true, hasPin: false });
+      }
+    } catch(e) {
+      clearTimeout(pauseTimer);
+      if (token !== _authCheckToken) return;
+      showPausedState();
     }
   }, 480);
 });
 
 // Passkey button
 passkeyBtn.addEventListener('click', async () => {
-  const username = input.value.trim().toLowerCase();
-  errEl.textContent = '';
-  passkeyBtn.disabled = true;
-  const orig = passkeyLbl.textContent;
-  passkeyLbl.textContent = _mode === 'existing' ? 'Signing in…' : 'Setting up…';
-  try {
-    if (_mode === 'existing') {
-      await loginPasskey();
-      window.location.replace('feed.html');
-    } else {
-      const user = await registerPasskey(username);
-      _newUserId = user.id;
-      showSection('backup');
-    }
-  } catch(e) {
-    if (e.name === 'NotAllowedError' && _userData?.hasPin) {
-      openPin('login');
-    } else if (e.name === 'NotAllowedError') {
-      errEl.textContent = 'Passkey not available on this device.';
-      passkeyBtn.disabled = false;
-      passkeyLbl.textContent = orig;
-    } else {
-      errEl.textContent = e.message || 'Something went wrong.';
-      passkeyBtn.disabled = false;
-      passkeyLbl.textContent = orig;
-    }
-  }
+  if (_mode === 'new') { openPin('setup'); return; }
+  errEl.textContent = 'Passkey sign-in is being upgraded. Use a PIN-enabled account for now.';
 });
 
 // PIN link (from method section)
@@ -336,7 +344,12 @@ const grid = document.getElementById('pin-grid');
 });
 
 // Hover states for nav elements
-document.querySelectorAll('.auth-btn, .auth-btn-secondary, .logo, .auth-alt-link').forEach(el => {
+document.getElementById('auth-sponsor-link').href = typeof snaccSponsorHref === 'function' ? snaccSponsorHref() : 'sponsor.html';
+document.getElementById('auth-sponsor-link').addEventListener('click', () => {
+  if (typeof snaccTrackMoney === 'function') snaccTrackMoney('sponsor_lead_click', { placement: 'auth_paused' });
+});
+
+document.querySelectorAll('.auth-btn, .auth-btn-secondary, .logo, .auth-alt-link, .nav-links a, .auth-money-note a').forEach(el => {
   el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
   el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
 });

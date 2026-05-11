@@ -21,6 +21,7 @@ document.body.insertAdjacentHTML('beforeend', `
           <h2 class="snack-info-name" id="snack-info-name"></h2>
           <p class="snack-info-count" id="snack-info-count"></p>
         </div>
+        <div id="snack-money"></div>
         <div class="snack-nutrition-inline" id="snack-nutrition"></div>
       </div>
     </div>
@@ -92,7 +93,8 @@ function _renderNutrition(product) {
 function _renderStoredNutrition(n, kind) {
   const el = document.getElementById('snack-nutrition');
   if (!el) return;
-  const per = n.serving ? `per serving (${n.serving})` : 'per serving';
+  const per = n.serving ? `per serving (${snaccEscapeHtml(n.serving)})` : 'per serving';
+  const val = (value, suffix = '') => value != null ? `${snaccEscapeHtml(value)}${suffix}` : '—';
   const isDrink = kind === 'drink';
   el.innerHTML = `
     <p class="snack-nut-per">${per}</p>
@@ -101,27 +103,27 @@ function _renderStoredNutrition(n, kind) {
       <div class="nutrition-bar thick"></div>
       <div class="nutrition-calories-row">
         <span class="nutrition-cal-label">Calories</span>
-        <span class="nutrition-cal-val">${n.calories??'—'}</span>
+        <span class="nutrition-cal-val">${val(n.calories)}</span>
       </div>
       <div class="nutrition-bar thick"></div>
-      <div class="nutrition-row"><strong>Total Sugars</strong> <span>${n.sugars!=null?n.sugars+'g':'—'}</span></div>
+      <div class="nutrition-row"><strong>Total Sugars</strong> <span>${val(n.sugars, 'g')}</span></div>
       <div class="nutrition-bar"></div>
-      <div class="nutrition-row"><strong>Total Carbohydrate</strong> <span>${n.carbs!=null?n.carbs+'g':'—'}</span></div>
+      <div class="nutrition-row"><strong>Total Carbohydrate</strong> <span>${val(n.carbs, 'g')}</span></div>
       <div class="nutrition-bar"></div>
-      <div class="nutrition-row"><strong>Sodium</strong> <span>${n.sodium!=null?n.sodium+'mg':'—'}</span></div>
+      <div class="nutrition-row"><strong>Sodium</strong> <span>${val(n.sodium, 'mg')}</span></div>
       ${isDrink ? `
       <div class="nutrition-bar"></div>
-      <div class="nutrition-row"><strong>Caffeine</strong> <span>${n.caffeine!=null?n.caffeine+'mg':'—'}</span></div>
+      <div class="nutrition-row"><strong>Caffeine</strong> <span>${val(n.caffeine, 'mg')}</span></div>
       <div class="nutrition-bar"></div>
-      <div class="nutrition-row"><strong>Protein</strong> <span>${n.protein!=null?n.protein+'g':'—'}</span></div>
+      <div class="nutrition-row"><strong>Protein</strong> <span>${val(n.protein, 'g')}</span></div>
       ` : `
       <div class="nutrition-bar"></div>
-      <div class="nutrition-row"><strong>Total Fat</strong> <span>${n.fat!=null?n.fat+'g':'—'}</span></div>
-      <div class="nutrition-row indent">Saturated Fat <span>${n.satFat!=null?n.satFat+'g':'—'}</span></div>
+      <div class="nutrition-row"><strong>Total Fat</strong> <span>${val(n.fat, 'g')}</span></div>
+      <div class="nutrition-row indent">Saturated Fat <span>${val(n.satFat, 'g')}</span></div>
       <div class="nutrition-bar"></div>
-      <div class="nutrition-row indent">Dietary Fiber <span>${n.fiber!=null?n.fiber+'g':'—'}</span></div>
+      <div class="nutrition-row indent">Dietary Fiber <span>${val(n.fiber, 'g')}</span></div>
       <div class="nutrition-bar"></div>
-      <div class="nutrition-row"><strong>Protein</strong> <span>${n.protein!=null?n.protein+'g':'—'}</span></div>
+      <div class="nutrition-row"><strong>Protein</strong> <span>${val(n.protein, 'g')}</span></div>
       `}
     </div>`;
 }
@@ -143,6 +145,7 @@ async function openSnackModal(snack) {
   const barsEl = document.getElementById('snack-bars');
   const logsEl = document.getElementById('snack-logs');
   const nutEl  = document.getElementById('snack-nutrition');
+  const moneyEl = document.getElementById('snack-money');
 
   imgBg.style.backgroundColor = _noImgColors[(snack.name||'').charCodeAt(0) % _noImgColors.length];
   if (snack.image) { img.src = snack.image; img.style.display = 'block'; }
@@ -154,6 +157,10 @@ async function openSnackModal(snack) {
   barsEl.innerHTML = '';
   logsEl.innerHTML = '';
   nutEl.innerHTML  = '';
+  moneyEl.innerHTML = '';
+  if (typeof snaccBuildBuyRail === 'function') {
+    moneyEl.appendChild(snaccBuildBuyRail({ ...snack, kind }, 'modal'));
+  }
   document.querySelector('.snack-info-col')?.classList.remove('has-nutrition');
 
   _backdrop.classList.add('open');
@@ -204,7 +211,7 @@ async function openSnackModal(snack) {
     const item = document.createElement('div');
     item.className = 'snack-log-item';
     item.innerHTML = `
-      <span class="snack-log-user">${r.users?.username ? '@' + r.users.username : '—'}${r.country ? ' / '+countryFlag(r.country) : ''}</span>
+      <span class="snack-log-user">${r.users?.username ? '@' + snaccEscapeHtml(r.users.username) : '—'}${r.country ? ' / '+snaccEscapeHtml(countryFlag(r.country)) : ''}</span>
       <span class="snack-log-time">${_timeAgo(r.logged_at)}</span>`;
     logsEl.appendChild(item);
   });

@@ -11,6 +11,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/safe-dom.js"></script>
+<script src="js/monetization.js"></script>
 <style>
 .catalog-wrap { padding: 2.5rem 3.5rem 6rem; max-width: 1100px; margin: 0 auto; }
 .catalog-header { margin-bottom: 2.5rem; }
@@ -117,6 +119,7 @@
     <li><a href="feed.html">Snaccs</a></li>
     <li><a href="drink.html">Drinks</a></li>
     <li><a href="log.html">Log an Item</a></li>
+    <li><a href="sponsor.html" class="sponsor-link">Brands</a></li>
     <li class="nav-profile">
       <button class="nav-username" id="nav-username"></button>
       <div class="nav-dropdown" id="nav-dropdown">
@@ -230,7 +233,7 @@ if (user) {
         ? [['serving','Serving',''],['calories','Calories',''],['sugars','Sugars (g)',''],['carbs','Carbs (g)',''],['sodium','Sodium (mg)',''],['caffeine','Caffeine (mg)',''],['protein','Protein (g)','']]
         : [['serving','Serving',''],['calories','Calories',''],['fat','Fat (g)',''],['satFat','Sat Fat (g)',''],['sodium','Sodium (mg)',''],['carbs','Carbs (g)',''],['fiber','Fiber (g)',''],['sugars','Sugars (g)',''],['protein','Protein (g)','']];
       nutGrid.innerHTML = fields.map(([key, label]) =>
-        `<div class="nut-edit-field"><label>${label}</label><input id="ne-${key}" type="${key==='serving'?'text':'number'}" value="${n[key]??''}" placeholder="—"/></div>`
+        `<div class="nut-edit-field"><label>${snaccEscapeHtml(label)}</label><input id="ne-${snaccEscapeHtml(key)}" type="${key==='serving'?'text':'number'}" value="${snaccEscapeHtml(n[key]??'')}" placeholder="—"/></div>`
       ).join('');
       nutSection.style.display = '';
     } else {
@@ -247,7 +250,7 @@ if (user) {
   async function _apiPost(path, body) {
     const res = await fetch(path, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(body),
     });
     const data = await res.json();
@@ -259,7 +262,7 @@ if (user) {
     btn.addEventListener('click', async () => {
       if (!activeRow) return;
       const v = btn.dataset.vibe;
-      const result = await _apiPost('/api/update-rating', { ratingId: activeRow.id, userId: user.id, vibe: v });
+      const result = await _apiPost('/api/update-rating', { ratingId: activeRow.id, vibe: v });
       if (result.error) { alert('Failed to update: ' + result.error); return; }
       closeAction(); await render();
     });
@@ -282,7 +285,7 @@ if (user) {
     });
     const btn = document.getElementById('nut-save-btn');
     btn.textContent = 'Saving…'; btn.disabled = true;
-    const result = await _apiPost('/api/update-rating', { ratingId: activeRow.id, userId: user.id, nutrition: n });
+    const result = await _apiPost('/api/update-rating', { ratingId: activeRow.id, nutrition: n });
     btn.textContent = 'Save nutrition'; btn.disabled = false;
     if (result.error) { alert('Failed: ' + result.error); return; }
     closeAction();
@@ -300,7 +303,7 @@ if (user) {
     }
     const id = activeRow.id;
     closeAction();
-    await _apiPost('/api/delete-rating', { ratingId: id, userId: user.id });
+    await _apiPost('/api/delete-rating', { ratingId: id });
     await render();
   });
 
@@ -330,7 +333,7 @@ if (user) {
       img.src = row.image;
     } else {
       const lbl = document.createElement('div'); lbl.className = 'card-no-label';
-      lbl.innerHTML = '<p>' + (row.name || '').slice(0, 14) + '</p>';
+      lbl.innerHTML = '<p>' + snaccEscapeHtml((row.name || '').slice(0, 14)) + '</p>';
       imgWrap.appendChild(lbl);
     }
 
@@ -342,7 +345,7 @@ if (user) {
     imgWrap.appendChild(menuBtn);
 
     const info = document.createElement('div'); info.className = 'card-info';
-    info.innerHTML = '<p class="card-name">' + row.name + '</p><p class="card-brand">' + (row.brand || '') + '</p><span class="vibe-badge ' + cls + '">' + v + '</span>';
+    info.innerHTML = '<p class="card-name">' + snaccEscapeHtml(row.name) + '</p><p class="card-brand">' + snaccEscapeHtml(row.brand || '') + '</p><span class="vibe-badge ' + cls + '">' + snaccEscapeHtml(v) + '</span>';
     card.append(imgWrap, info);
     card.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
     card.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
@@ -384,8 +387,9 @@ if (user) {
   }
 
   async function render() {
-    const { data, error } = await sb.from('ratings').select('*').eq('user_id', user.id).order('logged_at', { ascending: false });
-    const rows = (!error && data) ? data : [];
+    const res = await fetch('/api/list-my-ratings', { headers: authHeaders() });
+    const payload = await res.json().catch(() => ({}));
+    const rows = res.ok && Array.isArray(payload.data) ? payload.data : [];
     const mainEl = document.getElementById('warehouse-main');
     const snackScroll = document.getElementById('snack-scroll');
     const drinkScroll = document.getElementById('drink-scroll');
