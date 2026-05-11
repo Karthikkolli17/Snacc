@@ -1,3 +1,5 @@
+import { cleanBrand, transformProduct } from './_product-etl.js';
+
 const IMPORT_QUERIES = {
   snack: ['chips', 'cookies', 'candy', 'chocolate', 'crackers', 'popcorn', 'pretzels', 'granola bar'],
   drink: ['sparkling water', 'soda', 'juice drink', 'energy drink', 'kombucha', 'tea', 'coffee drink'],
@@ -92,13 +94,6 @@ function cleanName(name) {
     .trim();
 }
 
-function cleanBrand(brand) {
-  return String(brand || '')
-    .replace(/^\[\[/, '')
-    .replace(/\]\]$/, '')
-    .trim() || null;
-}
-
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -147,7 +142,7 @@ function normalizeUsdaProduct(food, kind) {
   if (!name) return null;
   if (!food.fdcId) return null;
 
-  return {
+  const product = {
     source: 'usda',
     source_id: String(food.fdcId),
     barcode: food.gtinUpc || null,
@@ -167,6 +162,10 @@ function normalizeUsdaProduct(food, kind) {
       sodium: nutrientValue(food, ['Sodium, Na', 'Sodium']),
     },
     raw: food,
+  };
+  return {
+    ...product,
+    ...transformProduct(product),
   };
 }
 
