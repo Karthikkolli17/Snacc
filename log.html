@@ -13,7 +13,6 @@
 <script src="js/auth.js"></script>
 <script src="js/country.js"></script>
 <script src="js/safe-dom.js"></script>
-<script src="js/monetization.js"></script>
 <style>
 .page { max-width: 860px; margin: 0 auto; padding: 4rem 2.5rem 6rem; }
 .steps { display: flex; align-items: center; gap: .6rem; margin-bottom: 3rem; }
@@ -254,7 +253,6 @@
         <a href="index.html">View Warehouse →</a>
       </div>
     </div>
-    <div id="success-money"></div>
   </div>
 </div>
 <script>
@@ -359,7 +357,6 @@ if (user) {
     document.getElementById('rating-section').classList.remove('visible');
     document.getElementById('save-btn').classList.remove('ready');
     document.getElementById('success-msg').classList.remove('show');
-    document.getElementById('success-money').innerHTML = '';
     document.querySelectorAll('.vibe-option').forEach(b=>b.classList.remove('picked'));
     setStep(1);
   }
@@ -447,7 +444,6 @@ if (user) {
     document.querySelectorAll('.vibe-option').forEach(b=>b.classList.remove('picked'));
     document.getElementById('save-btn').classList.remove('ready');
     document.getElementById('success-msg').classList.remove('show');
-    document.getElementById('success-money').innerHTML = '';
     document.getElementById('preview-brand').textContent=product.brand;
     document.getElementById('preview-name').textContent=product.name;
     const pImg=document.getElementById('preview-img');
@@ -467,7 +463,6 @@ if (user) {
     document.getElementById('rating-section').classList.remove('visible');
     document.getElementById('save-btn').classList.remove('ready');
     document.getElementById('success-msg').classList.remove('show');
-    document.getElementById('success-money').innerHTML = '';
     document.getElementById('manual-form').classList.remove('show');
     const resultsEl=document.getElementById('results');
     resultsEl.innerHTML=''; resultsEl.classList.remove('visible');
@@ -672,13 +667,6 @@ if (user) {
     } else {
       btn.classList.remove('ready');
       document.getElementById('success-msg').classList.add('show');
-      const moneyEl = document.getElementById('success-money');
-      moneyEl.innerHTML = '';
-      if (typeof snaccBuildBuyRail === 'function') {
-        const rail = snaccBuildBuyRail({ ...selectedProduct, kind: KIND }, 'post_log');
-        rail.classList.add('success-money');
-        moneyEl.appendChild(rail);
-      }
       document.querySelectorAll('.vibe-option').forEach(b=>b.classList.remove('picked'));
       selectedProduct=null; selectedVibe=null; setStep(1);
     }

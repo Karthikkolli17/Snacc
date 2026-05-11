@@ -21,7 +21,6 @@ document.body.insertAdjacentHTML('beforeend', `
           <h2 class="snack-info-name" id="snack-info-name"></h2>
           <p class="snack-info-count" id="snack-info-count"></p>
         </div>
-        <div id="snack-money"></div>
         <div class="snack-nutrition-inline" id="snack-nutrition"></div>
       </div>
     </div>
@@ -145,7 +144,6 @@ async function openSnackModal(snack) {
   const barsEl = document.getElementById('snack-bars');
   const logsEl = document.getElementById('snack-logs');
   const nutEl  = document.getElementById('snack-nutrition');
-  const moneyEl = document.getElementById('snack-money');
 
   imgBg.style.backgroundColor = _noImgColors[(snack.name||'').charCodeAt(0) % _noImgColors.length];
   if (snack.image) { img.src = snack.image; img.style.display = 'block'; }
@@ -157,10 +155,6 @@ async function openSnackModal(snack) {
   barsEl.innerHTML = '';
   logsEl.innerHTML = '';
   nutEl.innerHTML  = '';
-  moneyEl.innerHTML = '';
-  if (typeof snaccBuildBuyRail === 'function') {
-    moneyEl.appendChild(snaccBuildBuyRail({ ...snack, kind }, 'modal'));
-  }
   document.querySelector('.snack-info-col')?.classList.remove('has-nutrition');
 
   _backdrop.classList.add('open');
