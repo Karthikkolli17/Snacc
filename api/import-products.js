@@ -1,6 +1,6 @@
 const IMPORT_QUERIES = {
-  snack: ['chips', 'cookies', 'candy', 'chocolate', 'crackers', 'popcorn'],
-  drink: ['sparkling water', 'soda', 'juice drink', 'energy drink', 'kombucha', 'tea'],
+  snack: ['chips', 'cookies', 'candy', 'chocolate', 'crackers', 'popcorn', 'pretzels', 'granola bar'],
+  drink: ['sparkling water', 'soda', 'juice drink', 'energy drink', 'kombucha', 'tea', 'coffee drink'],
 };
 
 function requireAdmin(req, res) {
@@ -15,44 +15,65 @@ function requireAdmin(req, res) {
   return true;
 }
 
-function normalizeOffProduct(product, kind) {
-  const name = product.product_name || product.product_name_en || '';
-  if (!name.trim()) return null;
-  const sourceId = product.code || product._id;
-  if (!sourceId) return null;
+function cleanName(name) {
+  return String(name || '')
+    .replace(/^\d*\.?\d+\s*OZ?\s*/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
-  const countries = (product.countries_tags || [])
-    .map(tag => tag.replace(/^en:/, '').toUpperCase())
-    .filter(code => /^[A-Z]{2}$/.test(code));
+function nutrientValue(food, names) {
+  const wanted = new Set(names.map(name => name.toLowerCase()));
+  const nutrient = (food.foodNutrients || []).find(n => wanted.has(String(n.nutrientName || '').toLowerCase()));
+  return nutrient?.value ?? null;
+}
+
+function normalizeUsdaProduct(food, kind) {
+  const name = cleanName(food.description);
+  if (!name) return null;
+  if (!food.fdcId) return null;
 
   return {
-    source: 'open_food_facts',
-    source_id: String(sourceId),
-    barcode: product.code || null,
+    source: 'usda',
+    source_id: String(food.fdcId),
+    barcode: food.gtinUpc || null,
     kind,
-    name: name.trim(),
-    brand: (product.brands || '').split(',')[0].trim() || null,
-    image: product.image_front_url || product.image_url || null,
-    country: countries[0] || null,
-    categories: (product.categories_tags || []).slice(0, 12),
-    nutrition: product.nutriments || null,
-    raw: product,
+    name,
+    brand: food.brandOwner || food.brandName || null,
+    image: null,
+    country: food.marketCountry || 'US',
+    categories: [food.foodCategory].filter(Boolean),
+    nutrition: {
+      calories: nutrientValue(food, ['Energy']),
+      protein: nutrientValue(food, ['Protein']),
+      fat: nutrientValue(food, ['Total lipid (fat)', 'Total Fat']),
+      carbs: nutrientValue(food, ['Carbohydrate, by difference', 'Carbohydrate']),
+      sugars: nutrientValue(food, ['Sugars, total including NLEA', 'Total Sugars']),
+      fiber: nutrientValue(food, ['Fiber, total dietary', 'Dietary Fiber']),
+      sodium: nutrientValue(food, ['Sodium, Na', 'Sodium']),
+    },
+    raw: food,
   };
 }
 
-async function fetchOpenFoodFacts(kind, limit) {
+async function fetchUsda(kind, limit) {
+  if (!process.env.USDA_API_KEY) throw new Error('Missing USDA_API_KEY');
+
   const queries = IMPORT_QUERIES[kind] || IMPORT_QUERIES.snack;
-  const perQuery = Math.max(4, Math.ceil(limit / queries.length));
-  const batches = await Promise.allSettled(queries.map(async q => {
-    const url = new URL('https://world.openfoodfacts.org/api/v2/search');
-    url.searchParams.set('q', q);
-    url.searchParams.set('page_size', String(perQuery));
-    url.searchParams.set('sort_by', 'popularity_key');
-    url.searchParams.set('fields', 'code,_id,product_name,product_name_en,brands,image_front_url,image_url,countries_tags,categories_tags,nutriments');
-    const res = await fetch(url);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return (data.products || []).map(product => normalizeOffProduct(product, kind)).filter(Boolean);
+  const perQuery = Math.max(8, Math.ceil(limit / queries.length));
+  const batches = await Promise.allSettled(queries.map(async query => {
+    const url = new URL('https://api.nal.usda.gov/fdc/v1/foods/search');
+    url.searchParams.set('query', query);
+    url.searchParams.set('dataType', 'Branded');
+    url.searchParams.set('pageSize', String(perQuery));
+    url.searchParams.set('sortBy', 'publishedDate');
+    url.searchParams.set('sortOrder', 'desc');
+    url.searchParams.set('api_key', process.env.USDA_API_KEY);
+
+    const response = await fetch(url);
+    if (!response.ok) return [];
+    const data = await response.json();
+    return (data.foods || []).map(food => normalizeUsdaProduct(food, kind)).filter(Boolean);
   }));
 
   const seen = new Set();
@@ -93,12 +114,12 @@ export default async function handler(req, res) {
   }
 
   const kind = req.body?.kind === 'drink' ? 'drink' : 'snack';
-  const limit = Math.min(100, Math.max(10, Number(req.body?.limit || 50)));
+  const limit = Math.min(1000, Math.max(10, Number(req.body?.limit || 100)));
 
   try {
-    const products = await fetchOpenFoodFacts(kind, limit);
+    const products = await fetchUsda(kind, limit);
     const imported = await upsertProducts(products);
-    res.status(200).json({ ok: true, kind, imported });
+    res.status(200).json({ ok: true, source: 'usda', kind, imported });
   } catch (e) {
     res.status(500).json({ error: 'Product import failed', detail: e.message });
   }
