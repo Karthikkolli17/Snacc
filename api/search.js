@@ -46,6 +46,17 @@ function searchScore(product, queryWords, queryText) {
   return score;
 }
 
+function matchesQuery(product, queryWords, queryText, score) {
+  const qualityScore = Number(product.quality_score || 0);
+  const haystack = `${product.display_brand || ''} ${product.display_name || ''} ${product.search_text || ''}`.toLowerCase();
+
+  if (haystack.includes(queryText)) return true;
+  if (queryWords.length > 1) {
+    return queryWords.every(word => haystack.includes(word));
+  }
+  return score >= qualityScore + 12;
+}
+
 function canonicalName(product) {
   const brand = String(product.display_brand || product.brand || '').toLowerCase();
   let name = String(product.display_name || product.name || '').toLowerCase();
@@ -111,11 +122,7 @@ export default async function handler(req, res) {
         product,
         score: searchScore(product, queryWords, queryText),
       }))
-      .filter(({ product, score }) => {
-        if (score >= Number(product.quality_score || 0) + 12) return true;
-        const haystack = `${product.display_brand || ''} ${product.display_name || ''} ${product.search_text || ''}`.toLowerCase();
-        return queryWords.every(word => haystack.includes(word));
-      })
+      .filter(({ product, score }) => matchesQuery(product, queryWords, queryText, score))
       .sort((a, b) => b.score - a.score)
       .reduce((items, item) => {
         const key = `${item.product.display_brand || item.product.brand}|${item.product.display_name || item.product.name}`.toLowerCase();
