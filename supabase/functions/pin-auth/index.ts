@@ -18,12 +18,16 @@ function json(data: unknown, status = 200) {
 
 function normalizeUsername(username: unknown): string | null {
   if (typeof username !== "string") return null;
-  const lowerUser = username.trim().toLowerCase();
-  return /^[a-z0-9_]{1,20}$/.test(lowerUser) ? lowerUser : null;
+  const u = username.trim().toLowerCase();
+  return /^[a-z0-9_]{1,20}$/.test(u) ? u : null;
 }
 
 function isValidPin(pin: unknown): pin is string {
   return typeof pin === "string" && /^\d{4}$/.test(pin);
+}
+
+function isValidEmail(email: unknown): boolean {
+  return typeof email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
 function b64url(bytes: Uint8Array): string {
@@ -72,6 +76,30 @@ async function verifyPin(pin: string, stored: string): Promise<boolean> {
   return newHash === parts[2];
 }
 
+async function sha256hex(value: string): Promise<string> {
+  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function sendResetEmail(to: string, username: string, code: string) {
+  const apiKey = Deno.env.get("RESEND_API_KEY");
+  if (!apiKey) throw new Error("Email service not configured.");
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "Snacc <onboarding@resend.dev>",
+      to: [to],
+      subject: `${code} is your Snacc reset code`,
+      text: `Hi @${username},\n\nYour PIN reset code is: ${code}\n\nExpires in 10 minutes. If you didn't request this, ignore this email.\n\n— Snacc`,
+    }),
+  });
+  if (!res.ok) throw new Error(`Email send failed: ${await res.text()}`);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -80,20 +108,77 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  let body: { action: string; username: string; pin: string; userId?: string };
+  let body: Record<string, unknown>;
   try {
     body = await req.json();
   } catch {
     return json({ error: "Invalid request" }, 400);
   }
 
-  const { action, username, pin, userId } = body;
-  if (!action || username === undefined || pin === undefined) return json({ error: "Missing fields" }, 400);
+  const action = typeof body.action === "string" ? body.action : null;
+  if (!action) return json({ error: "Missing action" }, 400);
 
-  const lowerUser = normalizeUsername(username);
+  const lowerUser = normalizeUsername(body.username);
   if (!lowerUser) return json({ error: "Letters, numbers, underscores only. Max 20 characters." }, 400);
-  if (!isValidPin(pin)) return json({ error: "PIN must be exactly 4 digits." }, 400);
 
+  // ── send-reset ─────────────────────────────────────────────────────────────
+  if (action === "send-reset") {
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : null;
+    if (!email || !isValidEmail(email)) return json({ error: "Valid email required." }, 400);
+
+    const { data: user } = await sb.from("users").select("id, email").eq("username", lowerUser).maybeSingle();
+
+    // Always return ok — don't reveal if username/email matches
+    if (!user || user.email !== email) return json({ ok: true });
+
+    const raw = crypto.getRandomValues(new Uint32Array(1))[0] % 900000 + 100000;
+    const code = String(raw);
+    const codeHash = await sha256hex(code);
+    const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+    await sb.from("users").update({ reset_code_hash: codeHash, reset_code_expires_at: expires }).eq("id", user.id);
+
+    try {
+      await sendResetEmail(email, lowerUser, code);
+    } catch (e) {
+      return json({ error: (e as Error).message }, 500);
+    }
+
+    return json({ ok: true });
+  }
+
+  // ── verify-reset ───────────────────────────────────────────────────────────
+  if (action === "verify-reset") {
+    const code = typeof body.code === "string" ? body.code.trim() : null;
+    if (!code || !/^\d{6}$/.test(code)) return json({ error: "Enter the 6-digit code from your email." }, 400);
+
+    const { data: user } = await sb.from("users")
+      .select("id, reset_code_hash, reset_code_expires_at")
+      .eq("username", lowerUser)
+      .maybeSingle();
+
+    if (!user || !user.reset_code_hash) return json({ error: "Invalid or expired code." }, 401);
+    if (new Date(user.reset_code_expires_at) < new Date()) return json({ error: "Code expired — request a new one." }, 401);
+
+    const codeHash = await sha256hex(code);
+    if (codeHash !== user.reset_code_hash) return json({ error: "Wrong code — try again." }, 401);
+
+    // Issue a one-time reset token (UUID, hashed, 5-min TTL) reusing the same columns
+    const resetToken = crypto.randomUUID();
+    const tokenHash = await sha256hex(resetToken);
+    await sb.from("users").update({
+      reset_code_hash: tokenHash,
+      reset_code_expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+    }).eq("id", user.id);
+
+    return json({ reset_token: resetToken });
+  }
+
+  // ── Actions below require a valid PIN ──────────────────────────────────────
+  if (!isValidPin(body.pin)) return json({ error: "PIN must be exactly 4 digits." }, 400);
+  const pin = body.pin as string;
+
+  // ── register ───────────────────────────────────────────────────────────────
   if (action === "register") {
     const { data: existing } = await sb.from("users").select("id").eq("username", lowerUser).maybeSingle();
     if (existing) return json({ error: "Username already taken — try another." }, 409);
@@ -104,7 +189,9 @@ Deno.serve(async (req) => {
     return json({ id: newId, username: lowerUser, session_token: await signSession(newId, lowerUser) });
   }
 
+  // ── add-pin ────────────────────────────────────────────────────────────────
   if (action === "add-pin") {
+    const userId = typeof body.userId === "string" ? body.userId : null;
     if (!userId) return json({ error: "Missing userId" }, 400);
     const hash = await hashPin(pin);
     const { data, error } = await sb.from("users").update({ pin_hash: hash }).eq("id", userId).select("id");
@@ -113,6 +200,7 @@ Deno.serve(async (req) => {
     return json({ ok: true });
   }
 
+  // ── login ──────────────────────────────────────────────────────────────────
   if (action === "login") {
     const { data: user, error } = await sb
       .from("users")
@@ -143,11 +231,30 @@ Deno.serve(async (req) => {
     return json({ id: user.id, username: user.username, session_token: await signSession(user.id, user.username) });
   }
 
+  // ── reset (requires verified reset token) ─────────────────────────────────
   if (action === "reset") {
-    const { data: user } = await sb.from("users").select("id, username").eq("username", lowerUser).maybeSingle();
-    if (!user) return json({ error: "Username not found." }, 404);
+    const resetToken = typeof body.reset_token === "string" ? body.reset_token : null;
+    if (!resetToken) return json({ error: "Reset token required." }, 400);
+
+    const { data: user } = await sb.from("users")
+      .select("id, username, reset_code_hash, reset_code_expires_at")
+      .eq("username", lowerUser)
+      .maybeSingle();
+
+    if (!user || !user.reset_code_hash) return json({ error: "Invalid reset token." }, 401);
+    if (new Date(user.reset_code_expires_at) < new Date()) return json({ error: "Reset token expired — start over." }, 401);
+
+    const tokenHash = await sha256hex(resetToken);
+    if (tokenHash !== user.reset_code_hash) return json({ error: "Invalid reset token." }, 401);
+
     const hash = await hashPin(pin);
-    const { error } = await sb.from("users").update({ pin_hash: hash, pin_attempts: 0, pin_locked_until: null }).eq("id", user.id);
+    const { error } = await sb.from("users").update({
+      pin_hash: hash,
+      pin_attempts: 0,
+      pin_locked_until: null,
+      reset_code_hash: null,
+      reset_code_expires_at: null,
+    }).eq("id", user.id);
     if (error) return json({ error: error.message }, 500);
     return json({ id: user.id, username: user.username, session_token: await signSession(user.id, user.username) });
   }

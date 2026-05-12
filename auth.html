@@ -79,7 +79,7 @@
     </div>
     <div class="pin-grid" id="pin-grid"></div>
     <button class="auth-alt-link" id="passkey-link" style="display:none"></button>
-    <button class="auth-alt-link" id="forgot-pin-link" style="display:none">Forgot PIN?</button>
+    <a class="auth-alt-link" id="forgot-pin-link" href="mailto:karthikk.hnyf16@gmail.com?subject=PIN%20Reset%20Request" style="display:none">Forgot PIN? Email me to reset</a>
   </div>
 
   <!-- After passkey signup: offer PIN backup -->
@@ -122,6 +122,7 @@ let _pinFirst = '';
 let _pinVal   = '';
 let _newUserId = null;
 let _isReset   = false;
+let _resetToken = null;
 let _debounce  = null;
 let _authCheckToken = 0;
 
@@ -163,7 +164,7 @@ function openPin(mode) {
 
 function setMode(mode, userData) {
   _mode = mode; _userData = userData;
-  errEl.textContent = ''; _pinVal = ''; _pinFirst = ''; _isReset = false;
+  errEl.textContent = ''; _pinVal = ''; _pinFirst = ''; _isReset = false; _resetToken = null;
 
   if (mode === 'empty') { statusEl.textContent = ''; statusEl.classList.remove('show'); showSection(null); return; }
 
@@ -222,12 +223,6 @@ input.addEventListener('input', () => {
   }, 480);
 });
 
-// Forgot PIN link
-document.getElementById('forgot-pin-link').addEventListener('click', () => {
-  _isReset = true;
-  errEl.textContent = '';
-  openPin('setup');
-});
 
 // Passkey link (from PIN pad — go back, now unused but kept for safety)
 passkeyLink.addEventListener('click', () => { errEl.textContent = ''; showSection(null); });
@@ -263,9 +258,7 @@ async function onPinComplete() {
       return;
     }
     try {
-      if (_isReset) {
-        await resetPin(username, _pinVal);
-      } else if (_mode === 'new') {
+      if (_mode === 'new') {
         await registerPin(username, _pinVal);
       } else {
         await addPinToAccount(_userData.id, username, _pinVal);

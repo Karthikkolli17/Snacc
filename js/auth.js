@@ -112,8 +112,17 @@ async function loginPin(username, pin) {
   return user;
 }
 
-async function resetPin(username, pin) {
-  const data = await _pinRequest({ action: 'reset', username, pin });
+async function sendResetCode(username, email) {
+  await _pinRequest({ action: 'send-reset', username, email });
+}
+
+async function verifyResetCode(username, code) {
+  const data = await _pinRequest({ action: 'verify-reset', username, code });
+  return data.reset_token;
+}
+
+async function resetPin(username, pin, resetToken) {
+  const data = await _pinRequest({ action: 'reset', username, pin, reset_token: resetToken });
   const user = { id: data.id, username: data.username, sessionToken: data.session_token };
   localStorage.setItem('snacc_user', JSON.stringify(user));
   return user;
