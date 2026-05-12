@@ -68,18 +68,6 @@
   </div>
   <p class="auth-status" id="auth-status"></p>
   <p class="auth-error" id="auth-error"></p>
-  <!-- Passkey + PIN -->
-  <div id="method-section" style="display:none">
-    <button class="auth-btn" id="passkey-btn">
-      <svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 1 0 0 10A5 5 0 0 0 12 2z"/><path d="M2 20c0-3.5 4.5-6 10-6s10 2.5 10 6"/></svg>
-      <span id="passkey-btn-label">Continue</span>
-    </button>
-    <button class="auth-btn-secondary" id="pin-link" style="display:none">
-      <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      <span id="pin-link-label">Use a PIN</span>
-    </button>
-  </div>
-
   <!-- PIN pad -->
   <div id="pin-section" style="display:none">
     <p class="pin-label" id="pin-label">Choose a 4-digit PIN</p>
@@ -91,6 +79,7 @@
     </div>
     <div class="pin-grid" id="pin-grid"></div>
     <button class="auth-alt-link" id="passkey-link" style="display:none"></button>
+    <button class="auth-alt-link" id="forgot-pin-link" style="display:none">Forgot PIN?</button>
   </div>
 
   <!-- After passkey signup: offer PIN backup -->
@@ -121,10 +110,6 @@ const input       = document.getElementById('username-input');
 const errEl       = document.getElementById('auth-error');
 const statusEl    = document.getElementById('auth-status');
 const checking    = document.getElementById('auth-checking');
-const methodSec   = document.getElementById('method-section');
-const passkeyBtn  = document.getElementById('passkey-btn');
-const passkeyLbl  = document.getElementById('passkey-btn-label');
-const pinLink     = document.getElementById('pin-link');
 const pinSec      = document.getElementById('pin-section');
 const pinLabelEl  = document.getElementById('pin-label');
 const passkeyLink = document.getElementById('passkey-link');
@@ -136,11 +121,11 @@ let _pinMode  = null;      // setup | confirm | login | backup | backup-confirm
 let _pinFirst = '';
 let _pinVal   = '';
 let _newUserId = null;
+let _isReset   = false;
 let _debounce  = null;
 let _authCheckToken = 0;
 
 function showSection(name) {
-  methodSec.style.display = name === 'method' ? 'block' : 'none';
   pinSec.style.display    = name === 'pin'    ? 'block' : 'none';
   backupSec.style.display = name === 'backup' ? 'block' : 'none';
 }
@@ -165,40 +150,34 @@ function openPin(mode) {
 
   const labels = {
     login:           'Enter your PIN',
-    setup:           'Choose a 4-digit PIN',
+    setup:           _isReset ? 'Choose a new PIN' : 'Choose a 4-digit PIN',
     confirm:         'Confirm your PIN',
     backup:          'Choose a backup PIN',
     'backup-confirm':'Confirm your PIN',
   };
   pinLabelEl.textContent = labels[mode] || '';
 
+  document.getElementById('forgot-pin-link').style.display = mode === 'login' ? 'block' : 'none';
   passkeyLink.style.display = 'none';
 }
 
 function setMode(mode, userData) {
   _mode = mode; _userData = userData;
-  errEl.textContent = ''; _pinVal = ''; _pinFirst = '';
+  errEl.textContent = ''; _pinVal = ''; _pinFirst = ''; _isReset = false;
 
   if (mode === 'empty') { statusEl.textContent = ''; statusEl.classList.remove('show'); showSection(null); return; }
 
-  const { username, hasPasskey, hasPin } = userData;
+  const { username, hasPin } = userData;
 
   if (mode === 'new') {
     statusEl.textContent = `New here — joining as @${username}`; statusEl.classList.add('show');
-    passkeyLbl.textContent = 'Set a PIN to continue';
-    passkeyBtn.disabled = false;
-    pinLink.style.display = 'none';
-    showSection('method');
+    openPin('setup');
     return;
   }
 
   if (mode === 'existing') {
     statusEl.textContent = `Welcome back, @${username}`; statusEl.classList.add('show');
-    if (hasPin) { openPin('login'); return; }
-    passkeyLbl.textContent = `${authLabel} upgrade needed`;
-    passkeyBtn.disabled = false;
-    pinLink.style.display = 'none';
-    showSection('method');
+    openPin(hasPin ? 'login' : 'setup');
   }
 }
 
@@ -243,21 +222,15 @@ input.addEventListener('input', () => {
   }, 480);
 });
 
-// Passkey button
-passkeyBtn.addEventListener('click', async () => {
-  if (_mode === 'new') { openPin('setup'); return; }
-  errEl.textContent = 'Passkey sign-in is being upgraded. Use a PIN-enabled account for now.';
+// Forgot PIN link
+document.getElementById('forgot-pin-link').addEventListener('click', () => {
+  _isReset = true;
+  errEl.textContent = '';
+  openPin('setup');
 });
 
-// PIN link (from method section)
-pinLink.addEventListener('click', () => {
-  if (_mode === 'new') openPin('setup');
-  else if (_userData?.hasPin) openPin('login');
-  else openPin('setup'); // existing passkey user adding PIN for first time
-});
-
-// Passkey link (from PIN pad — go back)
-passkeyLink.addEventListener('click', () => { errEl.textContent = ''; showSection('method'); });
+// Passkey link (from PIN pad — go back, now unused but kept for safety)
+passkeyLink.addEventListener('click', () => { errEl.textContent = ''; showSection(null); });
 
 // Backup section
 document.getElementById('backup-yes-btn').addEventListener('click', () => openPin('backup'));
@@ -290,7 +263,9 @@ async function onPinComplete() {
       return;
     }
     try {
-      if (_mode === 'new') {
+      if (_isReset) {
+        await resetPin(username, _pinVal);
+      } else if (_mode === 'new') {
         await registerPin(username, _pinVal);
       } else {
         await addPinToAccount(_userData.id, username, _pinVal);

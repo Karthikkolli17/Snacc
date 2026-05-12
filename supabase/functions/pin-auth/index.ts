@@ -143,5 +143,14 @@ Deno.serve(async (req) => {
     return json({ id: user.id, username: user.username, session_token: await signSession(user.id, user.username) });
   }
 
+  if (action === "reset") {
+    const { data: user } = await sb.from("users").select("id, username").eq("username", lowerUser).maybeSingle();
+    if (!user) return json({ error: "Username not found." }, 404);
+    const hash = await hashPin(pin);
+    const { error } = await sb.from("users").update({ pin_hash: hash, pin_attempts: 0, pin_locked_until: null }).eq("id", user.id);
+    if (error) return json({ error: error.message }, 500);
+    return json({ id: user.id, username: user.username, session_token: await signSession(user.id, user.username) });
+  }
+
   return json({ error: "Unknown action" }, 400);
 });
