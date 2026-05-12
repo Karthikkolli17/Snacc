@@ -62,14 +62,16 @@
   <ul class="nav-links">
     <li><a href="feed.html">Snaccs</a></li>
     <li><a href="drink.html" class="active">Drinks</a></li>
-    <li><a href="log.html">Log an Item</a></li>
-    <li class="nav-profile">
+    <li id="nav-log-li" style="display:none"><a href="log.html">Log an Item</a></li>
+    <li class="nav-profile" id="nav-profile-li" style="display:none">
       <button class="nav-username" id="nav-username"></button>
       <div class="nav-dropdown" id="nav-dropdown">
         <a href="warehouse.html">Warehouse</a>
         <button onclick="logout()">Sign out</button>
       </div>
     </li>
+    <li id="nav-signin-li"><a href="auth.html">Sign in</a></li>
+    <li id="nav-signup-li"><a href="auth.html" class="nav-signup">Sign up free</a></li>
   </ul>
 </nav>
 <div class="catalog-wrap">
@@ -80,10 +82,17 @@
   <div class="catalog-grid" id="catalog"></div>
 </div>
 <script>
-const user = requireAuth();
+const user = getUser();
+
 if (user) {
   document.getElementById('nav-username').textContent = '@' + user.username;
+  document.getElementById('nav-log-li').style.display = '';
+  document.getElementById('nav-profile-li').style.display = '';
+  document.getElementById('nav-signin-li').style.display = 'none';
+  document.getElementById('nav-signup-li').style.display = 'none';
+}
 
+{
   const KIND = 'drink';
   const vibeLabels = { eat: 'Would drink again', mid: 'Mid', never: 'Never again' };
   const noImgColors = ['#1a2a4a','#3a1a1a','#1a3a1a','#2a1a3a','#3a2a1a','#1a3a3a'];
@@ -141,7 +150,7 @@ if (user) {
       </div>`;
 
     card.append(imgWrap, info);
-    card.addEventListener('click', () => openSnackModal({ name: snack.name, brand: snack.brand, image: snack.image, kind: KIND }));
+    card.addEventListener('click', () => user ? openSnackModal({ name: snack.name, brand: snack.brand, image: snack.image, kind: KIND }) : window.location.href = 'auth.html');
     card.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
     card.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
     setTimeout(() => card.classList.add('in'), delay);
@@ -222,10 +231,12 @@ if (user) {
 
   render();
 
-  const navBtn = document.getElementById('nav-username');
-  const navDrop = document.getElementById('nav-dropdown');
-  navBtn.addEventListener('click', e => { e.stopPropagation(); navDrop.classList.toggle('open'); });
-  document.addEventListener('click', () => navDrop.classList.remove('open'));
+  if (user) {
+    const navBtn = document.getElementById('nav-username');
+    const navDrop = document.getElementById('nav-dropdown');
+    navBtn.addEventListener('click', e => { e.stopPropagation(); navDrop.classList.toggle('open'); });
+    document.addEventListener('click', () => navDrop.classList.remove('open'));
+  }
 
   document.querySelectorAll('.nav-links a, .logo, .nav-username').forEach(el => {
     el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
