@@ -70,8 +70,8 @@
         <button onclick="logout()">Sign out</button>
       </div>
     </li>
-    <li id="nav-signin-li"><a href="auth.html">Sign in</a></li>
-    <li id="nav-signup-li"><a href="auth.html" class="nav-signup">Sign up free</a></li>
+    
+    <li id="nav-signup-li"><a href="auth.html" class="nav-signup">Get started</a></li>
   </ul>
 </nav>
 <div class="catalog-wrap">
@@ -88,7 +88,7 @@ if (user) {
   document.getElementById('nav-username').textContent = '@' + user.username;
   document.getElementById('nav-log-li').style.display = '';
   document.getElementById('nav-profile-li').style.display = '';
-  document.getElementById('nav-signin-li').style.display = 'none';
+  
   document.getElementById('nav-signup-li').style.display = 'none';
 }
 
